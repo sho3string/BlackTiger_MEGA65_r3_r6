@@ -71,51 +71,20 @@ architecture synthesis of main is
 -- @TODO: Remove these demo core signals
 signal keyboard_n          : std_logic_vector(79 downto 0);
 
+---------------------------------------------------------------------------
+-- JTFRAME clock enables
+---------------------------------------------------------------------------
+
+
+
 begin
 
-   -- @TODO: Add the actual MiSTer core here
-   -- The demo core's purpose is to show a test image and to make sure, that the MiSTer2MEGA65 framework
-   -- can be synthesized and run stand-alone without an actual MiSTer core being there, yet
-   i_democore : entity work.democore
-      port map (
-         clk_main_i           => clk_main_i,
+  
+ 
 
-         reset_i              => reset_soft_i or reset_hard_i,       -- long and short press of reset button mean the same
-         pause_i              => pause_i,
-
-         ball_col_rgb_i       => x"EE4020",                          -- ball color (RGB): orange
-         paddle_speed_i       => x"1",                               -- paddle speed is about 50 pixels / sec (due to 50 Hz)
-
-         keyboard_n_i         => keyboard_n,                         -- move the paddle with the cursor left/right keys...
-         joy_up_n_i           => joy_1_up_n_i,                       -- ... or move the paddle with a joystick in port #1
-         joy_down_n_i         => joy_1_down_n_i,
-         joy_left_n_i         => joy_1_left_n_i,
-         joy_right_n_i        => joy_1_right_n_i,
-         joy_fire_n_i         => joy_1_fire_n_i,
-
-         vga_ce_o             => video_ce_o,
-         vga_red_o            => video_red_o,
-         vga_green_o          => video_green_o,
-         vga_blue_o           => video_blue_o,
-         vga_vs_o             => video_vs_o,
-         vga_hs_o             => video_hs_o,
-         vga_hblank_o         => video_hblank_o,
-         vga_vblank_o         => video_vblank_o,
-
-         audio_left_o         => audio_left_o,
-         audio_right_o        => audio_right_o
-      ); -- i_democore
-
-   -- On video_ce_o and video_ce_ovl_o: You have an important @TODO when porting a core:
-   -- video_ce_o: You need to make sure that video_ce_o divides clk_main_i such that it transforms clk_main_i
-   --             into the pixelclock of the core (means: the core's native output resolution pre-scandoubler)
-   -- video_ce_ovl_o: Clock enable for the OSM overlay and for sampling the core's (retro) output in a way that
-   --             it is displayed correctly on a "modern" analog input device: Make sure that video_ce_ovl_o
-   --             transforms clk_main_o into the post-scandoubler pixelclock that is valid for the target
-   --             resolution specified by VGA_DX/VGA_DY (globals.vhd)
-   -- video_retro15kHz_o: '1', if the output from the core (post-scandoubler) in the retro 15 kHz analog RGB mode.
-   --             Hint: Scandoubler off does not automatically mean retro 15 kHz on.
-   video_ce_ovl_o <= video_ce_o;
+    -- TODO: Connect after jtbtiger video timing is integrated
+   video_ce_o     <= '0';
+   video_ce_ovl_o <= '0';
 
    -- @TODO: Keyboard mapping and keyboard behavior
    -- Each core is treating the keyboard in a different way: Some need low-active "matrices", some
