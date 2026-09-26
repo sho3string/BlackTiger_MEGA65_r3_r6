@@ -224,8 +224,11 @@ architecture synthesis of MEGA65_Core is
 -- Clocks and active high reset signals for each clock domain
 ---------------------------------------------------------------------------------------------
 
-signal main_clk               : std_logic;               -- Core main clock
+signal main_clk               : std_logic;
 signal main_rst               : std_logic;
+
+signal clk_24                 : std_logic;
+signal rst_24                 : std_logic;
 
 ---------------------------------------------------------------------------------------------
 -- main_clk (MiSTer core's clock)
@@ -311,14 +314,16 @@ begin
    main_joy_2_fire_n_o  <= '1';
 
 
-   -- MMCME2_ADV clock generators:
-   --   @TODO YOURCORE:       54 MHz
    clk_gen : entity work.clk
-      port map (
-         sys_clk_i         => clk_i,           -- expects 100 MHz
-         main_clk_o        => main_clk,        -- CORE's 54 MHz clock
-         main_rst_o        => main_rst         -- CORE's reset, synchronized
-      ); -- clk_gen
+   port map (
+      sys_clk_i  => clk_i,
+
+      main_clk_o => main_clk,   -- 48 MHz
+      main_rst_o => main_rst,
+
+      clk_24_o   => clk_24,     -- 24 MHz
+      rst_24_o   => rst_24
+   );
 
    main_clk_o  <= main_clk;
    main_rst_o  <= main_rst;
@@ -341,6 +346,7 @@ begin
       )
       port map (
          clk_main_i           => main_clk,
+         clk_24_i             => clk_24,
          reset_soft_i         => main_reset_core_i,
          reset_hard_i         => main_reset_m2m_i,
          pause_i              => main_pause_core_i,
@@ -497,51 +503,6 @@ begin
    main_drive_led_o     <= '0';
    main_drive_led_col_o <= x"00FF00";  -- 24-bit RGB value for the led
 
-   i_vdrives : entity work.vdrives
-      generic map (
-         VDNUM       => C_VDNUM
-      )
-      port map
-      (
-         clk_qnice_i       => qnice_clk_i,
-         clk_core_i        => main_clk,
-         reset_core_i      => main_reset_core_i,
-
-         -- Core clock domain
-         img_mounted_o     => open,
-         img_readonly_o    => open,
-         img_size_o        => open,
-         img_type_o        => open,
-         drive_mounted_o   => open,
-
-         -- Cache output signals: The dirty flags can be used to enforce data consistency
-         -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
-         -- The flushing flags can be used to signal the fact that the caches are currently
-         -- flushing to the user, for example using a special color/signal for example
-         -- at the drive led
-         cache_dirty_o     => open,
-         cache_flushing_o  => open,
-
-         -- QNICE clock domain
-         sd_lba_i          => (others => (others => '0')),
-         sd_blk_cnt_i      => (others => (others => '0')),
-         sd_rd_i           => (others => '0'),
-         sd_wr_i           => (others => '0'),
-         sd_ack_o          => open,
-
-         sd_buff_addr_o    => open,
-         sd_buff_dout_o    => open,
-         sd_buff_din_i     => (others => (others => '0')),
-         sd_buff_wr_o      => open,
-
-         -- QNICE interface (MMIO, 4k-segmented)
-         -- qnice_addr is 28-bit because we have a 16-bit window selector and a 4k window: 65536*4096 = 268.435.456 = 2^28
-         qnice_addr_i      => qnice_dev_addr_i,
-         qnice_data_i      => qnice_dev_data_i,
-         qnice_data_o      => qnice_demo_vd_data_o,
-         qnice_ce_i        => qnice_demo_vd_ce,
-         qnice_we_i        => qnice_demo_vd_we
-      ); -- i_vdrives
-
+   
 end architecture synthesis;
 
