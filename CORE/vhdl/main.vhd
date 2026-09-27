@@ -31,9 +31,9 @@ entity main is
       -- Video output
       video_ce_o              : out std_logic;
       video_ce_ovl_o          : out std_logic;
-      video_red_o             : out std_logic_vector(7 downto 0);
-      video_green_o           : out std_logic_vector(7 downto 0);
-      video_blue_o            : out std_logic_vector(7 downto 0);
+      video_red_o             : out std_logic_vector(3 downto 0);
+      video_green_o           : out std_logic_vector(3 downto 0);
+      video_blue_o            : out std_logic_vector(3 downto 0);
       video_vs_o              : out std_logic;
       video_hs_o              : out std_logic;
       video_hblank_o          : out std_logic;
@@ -63,7 +63,13 @@ entity main is
       pot1_x_i                : in  std_logic_vector(7 downto 0);
       pot1_y_i                : in  std_logic_vector(7 downto 0);
       pot2_x_i                : in  std_logic_vector(7 downto 0);
-      pot2_y_i                : in  std_logic_vector(7 downto 0)
+      pot2_y_i                : in  std_logic_vector(7 downto 0);
+
+      -- ROM download bus from QNICE
+      dn_clk_i                : in  std_logic;
+      dn_addr_i               : in  std_logic_vector(24 downto 0);
+      dn_data_i               : in  std_logic_vector(7 downto 0);
+      dn_wr_i                 : in  std_logic
    );
 end entity main;
 
@@ -76,37 +82,62 @@ signal keyboard_n          : std_logic_vector(79 downto 0);
 -- Black Tiger
 ---------------------------------------------------------------------------
 
-signal bt_pxl_cen       : std_logic;
 signal bt_pxl2_cen      : std_logic;
 
-signal bt_red           : std_logic_vector(3 downto 0);
-signal bt_green         : std_logic_vector(3 downto 0);
-signal bt_blue          : std_logic_vector(3 downto 0);
-
-signal bt_hs            : std_logic;
-signal bt_vs            : std_logic;
-signal bt_lhbl          : std_logic;
-signal bt_lvbl          : std_logic;
-
-signal bt_dip_flip      : std_logic;
 signal bt_debug_view    : std_logic_vector(7 downto 0);
 
--- ROM interfaces - unused for now
+-- Black Tiger ROM interfaces
 signal bt_main_addr     : std_logic_vector(18 downto 0);
 signal bt_main_cs       : std_logic;
+signal bt_main_data     : std_logic_vector(7 downto 0);
+signal bt_main_lo_data  : std_logic_vector(7 downto 0);
+signal bt_main_hi_data  : std_logic_vector(7 downto 0);
 
 signal bt_snd_addr      : std_logic_vector(14 downto 0);
 signal bt_snd_cs        : std_logic;
+signal bt_snd_data      : std_logic_vector(7 downto 0);
 
 signal bt_char_addr     : std_logic_vector(14 downto 1);
+signal bt_char_data     : std_logic_vector(15 downto 0);
 signal bt_scr_addr      : std_logic_vector(17 downto 1);
+signal bt_scr_data      : std_logic_vector(15 downto 0);
 signal bt_obj_addr      : std_logic_vector(17 downto 1);
+signal bt_obj_data      : std_logic_vector(15 downto 0);
+
+-- Download chip selects. The incoming address is the packed JTFRAME ROM map.
+signal dn_main_lo_we    : std_logic;
+signal dn_main_hi_we    : std_logic;
+signal dn_snd_we        : std_logic;
+signal dn_char_lo_we    : std_logic;
+signal dn_char_hi_we    : std_logic;
+signal dn_scr_lo_we     : std_logic;
+signal dn_scr_hi_we     : std_logic;
+signal dn_obj_lo_we     : std_logic;
+signal dn_obj_hi_we     : std_logic;
+signal dn_prom_we       : std_logic;
 
 -- Audio - unused for now
 signal bt_fm0           : signed(15 downto 0);
 signal bt_fm1           : signed(15 downto 0);
 signal bt_psg0          : signed(15 downto 0);
 signal bt_psg1          : signed(15 downto 0);
+
+component dualport_2clk_ram
+   generic (
+      FALLING_A  : boolean := false;
+      FALLING_B  : boolean := false;
+      ADDR_WIDTH : integer := 8
+   );
+   port (
+      clock_a   : in  std_logic;
+      address_a : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+      q_a       : out std_logic_vector(7 downto 0);
+      clock_b   : in  std_logic;
+      address_b : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
+      data_b    : in  std_logic_vector(7 downto 0);
+      wren_b    : in  std_logic
+   );
+end component;
 
 component jtbtiger_game
    port (
@@ -182,6 +213,145 @@ begin
 -- Black Tiger
 ---------------------------------------------------------------------------
 
+-- Packed download map:
+--   $00000-$47FFF main CPU
+--   $48000-$4FFFF sound CPU
+--   $50000-$57FFF chars
+--   $58000-$97FFF tiles
+--   $98000-$D7FFF objects
+--   $D8000-$D8FFF MCU
+--   $D9000-$D93FF PROMs
+--
+-- Port A is the running core. Port B is QNICE and therefore uses FALLING_B,
+-- matching the M2M dual-clock ROM convention.
+
+dn_main_lo_we <= dn_wr_i when unsigned(dn_addr_i) < 16#40000# else '0';
+dn_main_hi_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#40000# and unsigned(dn_addr_i) < 16#48000# else '0';
+dn_snd_we     <= dn_wr_i when unsigned(dn_addr_i) >= 16#48000# and unsigned(dn_addr_i) < 16#50000# else '0';
+
+-- 16-bit graphics ROMs are stored as two byte-wide BRAMs.  The generated
+-- files are already interleaved, so dn_addr_i(0) selects the byte lane.
+dn_char_lo_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#50000# and unsigned(dn_addr_i) < 16#58000# and dn_addr_i(0) = '0' else '0';
+dn_char_hi_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#50000# and unsigned(dn_addr_i) < 16#58000# and dn_addr_i(0) = '1' else '0';
+dn_scr_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '0' else '0';
+dn_scr_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '1' else '0';
+dn_obj_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '0' else '0';
+dn_obj_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '1' else '0';
+
+dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9400# else '0';
+
+-- Main CPU ROM is 288 KiB, so split it into 256 KiB + 32 KiB instead of
+-- wasting a 512 KiB power-of-two BRAM allocation.
+i_main_rom_lo : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 18)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_main_addr(17 downto 0),
+      q_a       => bt_main_lo_data,
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(17 downto 0),
+      data_b    => dn_data_i,
+      wren_b    => dn_main_lo_we
+   );
+
+i_main_rom_hi : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 15)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_main_addr(14 downto 0),
+      q_a       => bt_main_hi_data,
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(14 downto 0),
+      data_b    => dn_data_i,
+      wren_b    => dn_main_hi_we
+   );
+
+bt_main_data <= bt_main_hi_data when bt_main_addr(18) = '1' else bt_main_lo_data;
+
+i_sound_rom : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 15)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_snd_addr,
+      q_a       => bt_snd_data,
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(14 downto 0),
+      data_b    => dn_data_i,
+      wren_b    => dn_snd_we
+   );
+
+i_char_rom_lo : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 14)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_char_addr(14 downto 1),
+      q_a       => bt_char_data(7 downto 0),
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(14 downto 1),
+      data_b    => dn_data_i,
+      wren_b    => dn_char_lo_we
+   );
+
+i_char_rom_hi : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 14)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_char_addr(14 downto 1),
+      q_a       => bt_char_data(15 downto 8),
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(14 downto 1),
+      data_b    => dn_data_i,
+      wren_b    => dn_char_hi_we
+   );
+
+i_scroll_rom_lo : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 17)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_scr_addr(17 downto 1),
+      q_a       => bt_scr_data(7 downto 0),
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(17 downto 1),
+      data_b    => dn_data_i,
+      wren_b    => dn_scr_lo_we
+   );
+
+i_scroll_rom_hi : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 17)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_scr_addr(17 downto 1),
+      q_a       => bt_scr_data(15 downto 8),
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(17 downto 1),
+      data_b    => dn_data_i,
+      wren_b    => dn_scr_hi_we
+   );
+
+i_object_rom_lo : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 17)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_obj_addr(17 downto 1),
+      q_a       => bt_obj_data(7 downto 0),
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(17 downto 1),
+      data_b    => dn_data_i,
+      wren_b    => dn_obj_lo_we
+   );
+
+i_object_rom_hi : dualport_2clk_ram
+   generic map (FALLING_B => true, ADDR_WIDTH => 17)
+   port map (
+      clock_a   => clk_main_i,
+      address_a => bt_obj_addr(17 downto 1),
+      q_a       => bt_obj_data(15 downto 8),
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(17 downto 1),
+      data_b    => dn_data_i,
+      wren_b    => dn_obj_hi_we
+   );
+
 i_black_tiger : jtbtiger_game
    port map (
       -- Clocks
@@ -192,61 +362,62 @@ i_black_tiger : jtbtiger_game
 
       -- Pixel enables
       pxl2_cen    => bt_pxl2_cen,      -- 12 MHz
-      pxl_cen     => bt_pxl_cen,       -- 6 MHz
+      pxl_cen     => video_ce_o,       -- 6 MHz
 
       -- Video
-      red         => bt_red,
-      green       => bt_green,
-      blue        => bt_blue,
-      LHBL        => bt_lhbl,
-      LVBL        => bt_lvbl,
-      HS          => bt_hs,
-      VS          => bt_vs,
+      red         => video_red_o,
+      green       => video_green_o,
+      blue        => video_blue_o,
+      LHBL        => video_hblank_o,
+      LVBL        => video_vblank_o,
+      HS          => video_hs_o,
+      VS          => video_vs_o,
 
       -- Controls - temporary
-      cab_1p      => (others => '0'),
-      coin        => (others => '0'),
-      joystick1   => (others => '0'),
-      joystick2   => (others => '0'),
+      cab_1p      => (others => '1'),
+      coin        => (others => '1'),
+      joystick1   => (others => '1'),
+      joystick2   => (others => '1'),
 
-      dipsw       => (others => '0'),
-      dip_pause   => '0',
-      service     => '0',
-      dip_flip    => bt_dip_flip,
+      dipsw       => (others => '0'), -- separate issue; DIP configuration
+      dip_pause   => '1', -- pause is active low, active high run
+      service     => '1', -- 1 = inactive not pressed
+      dip_flip    => open,
 
       gfx_en      => "1111",
 
       debug_bus   => (others => '0'),
       debug_view  => bt_debug_view,
 
-      -- ROM interfaces - temporary dummy data
+      -- ROM interfaces
       main_addr   => bt_main_addr,
       main_cs     => bt_main_cs,
       main_ok     => '1',
-      main_data   => x"FF",
+      main_data   => bt_main_data,
 
       snd_addr    => bt_snd_addr,
       snd_cs      => bt_snd_cs,
       snd_ok      => '1',
-      snd_data    => x"FF",
+      snd_data    => bt_snd_data,
 
       char_addr   => bt_char_addr,
       char_ok     => '1',
-      char_data   => x"FFFF",
+      char_data   => bt_char_data,
 
       scr_addr    => bt_scr_addr,
       scr_ok      => '1',
-      scr_data    => x"FFFF",
+      scr_data    => bt_scr_data,
 
       obj_addr    => bt_obj_addr,
       obj_ok      => '1',
-      obj_data    => x"FFFF",
+      obj_data    => bt_obj_data,
 
-      -- PROM programming - later
-      ioctl_addr  => (others => '0'),
-      prog_addr   => (others => '0'),
-      prog_data   => (others => '0'),
-      prom_we     => '0',
+      -- MCU + PROM programming.  jtbtiger_game decodes $D8000-$D8FFF as
+      -- MCU and $D9000-$D93FF as the four 256-byte PROMs.
+      ioctl_addr  => '0' & dn_addr_i,
+      prog_addr   => dn_addr_i,
+      prog_data   => x"00" & dn_data_i,
+      prom_we     => dn_prom_we,
 
       -- Audio - later
       fm0         => bt_fm0,
@@ -255,22 +426,7 @@ i_black_tiger : jtbtiger_game
       psg1        => bt_psg1
    );
    
-    ---------------------------------------------------------------------------
-    -- Native Black Tiger video -> M2M
-    ---------------------------------------------------------------------------
-    
-    video_ce_o     <= bt_pxl_cen;
-    video_ce_ovl_o <= bt_pxl_cen;
-    
-    video_red_o    <= bt_red   & bt_red;
-    video_green_o  <= bt_green & bt_green;
-    video_blue_o   <= bt_blue  & bt_blue;
-    
-    video_hs_o     <= bt_hs;
-    video_vs_o     <= bt_vs;
-    
-    video_hblank_o <= not bt_lhbl;
-    video_vblank_o <= not bt_lvbl;
+
     
     -- Audio later
     audio_left_o   <= (others => '0');

@@ -230,19 +230,14 @@ signal main_rst               : std_logic;
 signal clk_24                 : std_logic;
 signal rst_24                 : std_logic;
 
----------------------------------------------------------------------------------------------
--- main_clk (MiSTer core's clock)
----------------------------------------------------------------------------------------------
+   ---------------------------------------------------------------------------------------------
+   -- Black Tiger ROM download bus (QNICE clock domain)
+   ---------------------------------------------------------------------------------------------
+   signal qnice_dn_addr          : std_logic_vector(24 downto 0);
+   signal qnice_dn_data          : std_logic_vector(7 downto 0);
+   signal qnice_dn_wr            : std_logic;
 
----------------------------------------------------------------------------------------------
--- qnice_clk
----------------------------------------------------------------------------------------------
 
----------------------------------------------------------------------------------------------
--- Democore & example stuff: Delete before starting to port your own core
----------------------------------------------------------------------------------------------
-
--- Democore menu items
 constant C_MENU_HDMI_16_9_50   : natural := 12;
 constant C_MENU_HDMI_16_9_60   : natural := 13;
 constant C_MENU_HDMI_4_3_50    : natural := 14;
@@ -250,14 +245,36 @@ constant C_MENU_HDMI_5_4_50    : natural := 15;
 constant C_MENU_HDMI_640_60    : natural := 16;
 constant C_MENU_HDMI_720_5994  : natural := 17;
 constant C_MENU_SVGA_800_60    : natural := 18;
-constant C_MENU_CRT_EMULATION  : natural := 30;
-constant C_MENU_HDMI_ZOOM      : natural := 31;
-constant C_MENU_IMPROVE_AUDIO  : natural := 32;
+
+constant C_MENU_CRT_EMULATION  : natural := 24;
+constant C_MENU_HDMI_ZOOM      : natural := 25;
+constant C_MENU_IMPROVE_AUDIO  : natural := 26;
 
 -- QNICE clock domain
 signal qnice_demo_vd_data_o   : std_logic_vector(15 downto 0);
 signal qnice_demo_vd_ce       : std_logic;
 signal qnice_demo_vd_we       : std_logic;
+
+
+-- Unprocessed video output from the core
+signal main_video_red      : std_logic_vector(3 downto 0);   
+signal main_video_green    : std_logic_vector(3 downto 0);
+signal main_video_blue     : std_logic_vector(3 downto 0);
+signal main_video_vs       : std_logic;
+signal main_video_hs       : std_logic;
+signal main_video_hblank   : std_logic;
+signal main_video_vblank   : std_logic;
+
+signal video_ce            : std_logic;
+signal video_ce_ovl        : std_logic;
+signal video_red           : std_logic_vector(7 downto 0);
+signal video_green         : std_logic_vector(7 downto 0);
+signal video_blue          : std_logic_vector(7 downto 0);
+signal video_vs            : std_logic;
+signal video_hs            : std_logic;
+signal video_vblank        : std_logic;
+signal video_hblank        : std_logic;
+signal video_de            : std_logic;
 
 begin
 
@@ -330,6 +347,16 @@ begin
    video_clk_o <= main_clk;
    video_rst_o <= main_rst;
 
+   video_red_o      <= video_red;
+   video_green_o    <= video_green;
+   video_blue_o     <= video_blue;
+   video_vs_o       <= video_vs;
+   video_hs_o       <= video_hs;
+   video_hblank_o   <= video_hblank;
+   video_vblank_o   <= video_vblank;  
+   video_ce_o       <= video_ce;
+   video_ce_ovl_o   <= video_ce_ovl;
+
    ---------------------------------------------------------------------------------------------
    -- main_clk (MiSTer core's clock)
    ---------------------------------------------------------------------------------------------
@@ -355,15 +382,15 @@ begin
 
          -- Video output
          -- This is PAL 720x576 @ 50 Hz (pixel clock 27 MHz), but synchronized to main_clk (54 MHz).
-         video_ce_o           => video_ce_o,
-         video_ce_ovl_o       => video_ce_ovl_o,
-         video_red_o          => video_red_o,
-         video_green_o        => video_green_o,
-         video_blue_o         => video_blue_o,
-         video_vs_o           => video_vs_o,
-         video_hs_o           => video_hs_o,
-         video_hblank_o       => video_hblank_o,
-         video_vblank_o       => video_vblank_o,
+         video_ce_o           => video_ce,-- 6mhz from MiSTer core
+         video_ce_ovl_o       => video_ce_ovl,
+         video_red_o          => main_video_red,
+         video_green_o        => main_video_green,
+         video_blue_o         => main_video_blue,
+         video_vs_o           => main_video_vs,
+         video_hs_o           => main_video_hs,
+         video_hblank_o       => main_video_hblank,
+         video_vblank_o       => main_video_vblank,
 
          -- audio output (pcm format, signed values)
          audio_left_o         => main_audio_left_o,
@@ -389,8 +416,34 @@ begin
          pot1_x_i             => main_pot1_x_i,
          pot1_y_i             => main_pot1_y_i,
          pot2_x_i             => main_pot2_x_i,
-         pot2_y_i             => main_pot2_y_i
+         pot2_y_i             => main_pot2_y_i,
+
+         -- Black Tiger ROM download bus
+         dn_clk_i             => qnice_clk_i,
+         dn_addr_i            => qnice_dn_addr,
+         dn_data_i            => qnice_dn_data,
+         dn_wr_i              => qnice_dn_wr
       ); -- i_main
+      
+    process (main_clk) -- 48 MHz
+    begin
+       if rising_edge(main_clk) then
+    
+          -- 4-bit -> 8-bit
+        video_red   <= main_video_red   & main_video_red;
+        video_green <= main_video_green & main_video_green;
+        video_blue  <= main_video_blue  & main_video_blue;
+  
+        -- JTFRAME LHBL/LVBL are active-high display enables
+        -- M2M expects active-high blanking
+        video_hs     <= main_video_hs;
+        video_vs     <= main_video_vs;
+        video_hblank <= not main_video_hblank;
+        video_vblank <= not main_video_vblank;
+        video_de     <= not (main_video_hblank or main_video_vblank);
+    
+       end if;
+    end process;
 
    ---------------------------------------------------------------------------------------------
    -- Audio and video settings (QNICE clock domain)
@@ -452,29 +505,113 @@ begin
    ---------------------------------------------------------------------------------------------
 
    core_specific_devices : process(all)
-   begin
-      -- make sure that this is x"EEEE" by default and avoid a register here by having this default value
-      qnice_dev_data_o     <= x"EEEE";
-      qnice_dev_wait_o     <= '0';
+    begin
+       -- Default response
+       qnice_dev_data_o <= x"EEEE";
+       qnice_dev_wait_o <= '0';
+    
+       -- Default ROM download bus
+       qnice_dn_wr      <= '0';
+       qnice_dn_addr    <= (others => '0');
+       qnice_dn_data    <= (others => '0');
+    
+       case qnice_dev_id_i is
 
-      -- Demo core specific: Delete before starting to port your core
-      qnice_demo_vd_ce     <= '0';
-      qnice_demo_vd_we     <= '0';
+         ----------------------------------------------------------------------
+         -- Main CPU
+         -- $00000 - $47FFF
+         ----------------------------------------------------------------------
+         when C_DEV_BT_MAIN =>
+            qnice_dn_wr   <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dn_addr <= std_logic_vector(
+               to_unsigned(16#00000#, qnice_dn_addr'length) +
+               resize(unsigned(qnice_dev_addr_i), qnice_dn_addr'length)
+            );
+            qnice_dn_data <= qnice_dev_data_i(7 downto 0);
 
-      case qnice_dev_id_i is
+         ----------------------------------------------------------------------
+         -- Sound CPU
+         -- $48000 - $4FFFF
+         ----------------------------------------------------------------------
+         when C_DEV_BT_SOUND =>
+            qnice_dn_wr   <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dn_addr <= std_logic_vector(
+               to_unsigned(16#48000#, qnice_dn_addr'length) +
+               resize(unsigned(qnice_dev_addr_i), qnice_dn_addr'length)
+            );
+            qnice_dn_data <= qnice_dev_data_i(7 downto 0);
 
-         -- Demo core specific stuff: delete before porting your own core
-         when C_DEV_DEMO_VD =>
-            qnice_demo_vd_ce     <= qnice_dev_ce_i;
-            qnice_demo_vd_we     <= qnice_dev_we_i;
-            qnice_dev_data_o     <= qnice_demo_vd_data_o;
+         ----------------------------------------------------------------------
+         -- Characters
+         -- $50000 - $57FFF
+         ----------------------------------------------------------------------
+         when C_DEV_BT_CHAR =>
+            qnice_dn_wr   <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dn_addr <= std_logic_vector(
+               to_unsigned(16#50000#, qnice_dn_addr'length) +
+               resize(unsigned(qnice_dev_addr_i), qnice_dn_addr'length)
+            );
+            qnice_dn_data <= qnice_dev_data_i(7 downto 0);
 
-         -- @TODO YOUR RAMs or ROMs (e.g. for cartridges) or other devices here
-         -- Device numbers need to be >= 0x0100
+         ----------------------------------------------------------------------
+         -- Tiles
+         -- $58000 - $97FFF
+         ----------------------------------------------------------------------
+         when C_DEV_BT_TILES =>
+            qnice_dn_wr   <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dn_addr <= std_logic_vector(
+               to_unsigned(16#58000#, qnice_dn_addr'length) +
+               resize(unsigned(qnice_dev_addr_i), qnice_dn_addr'length)
+            );
+            qnice_dn_data <= qnice_dev_data_i(7 downto 0);
 
-         when others => null;
+         ----------------------------------------------------------------------
+         -- Objects / sprites
+         -- $98000 - $D7FFF
+         ----------------------------------------------------------------------
+         when C_DEV_BT_OBJ =>
+            qnice_dn_wr   <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dn_addr <= std_logic_vector(
+               to_unsigned(16#98000#, qnice_dn_addr'length) +
+               resize(unsigned(qnice_dev_addr_i), qnice_dn_addr'length)
+            );
+            qnice_dn_data <= qnice_dev_data_i(7 downto 0);
+
+         ----------------------------------------------------------------------
+         -- 8751 MCU
+         -- $D8000 - $D8FFF
+         ----------------------------------------------------------------------
+         when C_DEV_BT_MCU =>
+            qnice_dn_wr   <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dn_addr <= std_logic_vector(
+               to_unsigned(16#D8000#, qnice_dn_addr'length) +
+               resize(unsigned(qnice_dev_addr_i), qnice_dn_addr'length)
+            );
+            qnice_dn_data <= qnice_dev_data_i(7 downto 0);
+
+         ----------------------------------------------------------------------
+         -- PROMs
+         -- $D9000 - $D93FF
+         ----------------------------------------------------------------------
+         when C_DEV_BT_PROM =>
+            qnice_dn_wr   <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dn_addr <= std_logic_vector(
+               to_unsigned(16#D9000#, qnice_dn_addr'length) +
+               resize(unsigned(qnice_dev_addr_i), qnice_dn_addr'length)
+            );
+            qnice_dn_data <= qnice_dev_data_i(7 downto 0);
+
+         when others =>
+            null;
+
       end case;
-   end process core_specific_devices;
+    
+       -- Never write while QNICE reset is asserted
+       if qnice_rst_i = '1' then
+          qnice_dn_wr <= '0';
+       end if;
+    
+    end process core_specific_devices;
 
    ---------------------------------------------------------------------------------------------
    -- Dual Clocks
