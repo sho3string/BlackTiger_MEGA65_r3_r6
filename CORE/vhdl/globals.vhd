@@ -17,6 +17,45 @@ use work.video_modes_pkg.all;
 
 package globals is
 
+
+-- menu items
+-- menu items
+constant C_MENU_HDMI_16_9_50   : natural := 12;
+constant C_MENU_HDMI_16_9_60   : natural := 13;
+constant C_MENU_HDMI_4_3_50    : natural := 14;
+constant C_MENU_HDMI_5_4_50    : natural := 15;
+constant C_MENU_HDMI_640_60    : natural := 16;
+constant C_MENU_HDMI_720_5994  : natural := 17;
+constant C_MENU_SVGA_800_60    : natural := 18;
+
+constant C_MENU_CRT_EMULATION  : natural := 24;
+constant C_MENU_HDMI_ZOOM      : natural := 25;
+constant C_MENU_IMPROVE_AUDIO  : natural := 26;
+
+-- Black Tiger controls
+constant C_MENU_SECOND_FIRE    : natural := 27;
+constant C_MENU_POTPOL         : natural := 29;  -- P1 polarity
+constant C_MENU_P2_POTPOL      : natural := 31;  -- P2 polarity
+
+-- Black Tiger DIP SW1
+constant C_MENU_SW1_0          : natural := 37;
+constant C_MENU_SW1_1          : natural := 38;
+constant C_MENU_SW1_2          : natural := 39;
+constant C_MENU_SW1_3          : natural := 40;
+constant C_MENU_SW1_4          : natural := 41;
+constant C_MENU_SW1_5          : natural := 42;
+constant C_MENU_SW1_6          : natural := 43;
+constant C_MENU_SW1_7          : natural := 44;
+
+-- Black Tiger DIP SW2
+constant C_MENU_SW2_0          : natural := 50;
+constant C_MENU_SW2_1          : natural := 51;
+constant C_MENU_SW2_2          : natural := 52;
+constant C_MENU_SW2_3          : natural := 53;
+constant C_MENU_SW2_4          : natural := 54;
+constant C_MENU_SW2_5          : natural := 55;
+constant C_MENU_SW2_6          : natural := 56;
+constant C_MENU_SW2_7          : natural := 57;
 ----------------------------------------------------------------------------------------------------------
 -- QNICE Firmware
 ----------------------------------------------------------------------------------------------------------

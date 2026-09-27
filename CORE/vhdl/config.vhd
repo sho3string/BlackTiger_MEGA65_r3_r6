@@ -76,25 +76,20 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
 constant SCR_WELCOME : string :=
 
-   "Name of the Demo Core Version 1.0\n" &
-   "MiSTer port done by Demo Author in 2022\n\n" &
+   "Black Tiger V0.5.0 - Alpha\n" &
+   "--------------------------\n" &
+   "\n" &
+   "Jotego port by Muse 2026\n\n" &
 
    -- We are not insisting. But it would be nice if you gave us credit for MiSTer2MEGA65 by leaving these lines in
-   "Powered by MiSTer2MEGA65 Version [WIP],\n" &
-   "done by sy2002 and MJoergen in 2022\n" &
-
-   "\n\nEdit config.vhd to modify welcome screen.\n\n" &
-   "You can for example show the keyboard map.\n" &
-   "Look at this example for the Demo core:\n\n\n" &
-
-   "    Key                Demo core\n" &
-   "    " & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_1 & CHR_LINE_1 & "\n" &
-   "    Left Cursor        Paddle left\n" &
-   "    Right Cursor       Paddle right\n" &
-   "    Space              Start game\n" &
-   "    Help               Options menu\n\n\n" &
-
-   "\n\n    Press Space to continue.\n\n\n";
+   "Powered by MiSTer2MEGA65\n"   &
+   "By sy2002 and MJoergen\n"     &
+   "\n\n"                                 &
+   "Credits  : Press '5' or '6'\n"        & 
+   "Start    : Press '1' or '2'\n"        &
+   "Pause    : Press 'p'\n"               &
+   "Controls : Joy - arrows & z+x\n"      &
+   "\n\n    Press Space to continue.\n"; 
 
 constant HELP_1 : string :=
 
@@ -320,111 +315,226 @@ constant OPTM_GTC          : natural := 17;                -- Amount of signific
 --------------------------------------------------------------------------------------------------------------------
 
 -- Strings with which %s will be replaced in case the menu item is of type OPTM_G_MOUNT_DRV
-constant OPTM_S_MOUNT      : string := "<Mount Drive>";     -- no disk image mounted, yet
-constant OPTM_S_CRTROM     : string := "<Load>";            -- no ROM loaded, yet
-constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal write cache is dirty and not yet written back to the SD card
+--------------------------------------------------------------------------------------------------------------------
+-- Options Menu
+--------------------------------------------------------------------------------------------------------------------
+
+-- Strings with which %s will be replaced in case the menu item is of type OPTM_G_MOUNT_DRV
+constant OPTM_S_MOUNT      : string := "<Mount Drive>";
+constant OPTM_S_CRTROM     : string := "<Load>";
+constant OPTM_S_SAVING     : string := "<Saving>";
 
 -- Size of menu and menu items
--- CAUTION: 1. End each line (also the last one) with a \n and make sure empty lines / separator lines are only consisting of a "\n"
---             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
---          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
---             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 29;  -- amount of items including empty lines:
-                                             -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
-                                             -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
-                                             -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
+constant OPTM_SIZE         : natural := 62;
 
--- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
--- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
+-- Net size of the Options menu on the screen in characters
 constant OPTM_DX           : natural := 23;
-constant OPTM_DY           : natural := 22;
+constant OPTM_DY           : natural := 28;
 
 constant OPTM_ITEMS        : string :=
 
-   " Demo Headline A\n"     &
-   "\n"                     &
-   " Item A.1\n"            &
-   " Item A.2\n"            &
-   " Item A.3\n"            &
-   " Item A.4\n"            &
-   "\n"                     &
-   " Demo Headline B\n"     &
-   "\n"                     &
+   " Demo Headline A\n"     &  --  0
+   "\n"                     &  --  1
+   " Item A.1\n"            &  --  2
+   " Item A.2\n"            &  --  3
+   " Item A.3\n"            &  --  4
+   " Item A.4\n"            &  --  5
+   "\n"                     &  --  6
+   " Demo Headline B\n"     &  --  7
+   "\n"                     &  --  8
 
-   " HDMI: %s\n"            &    -- HDMI submenu
-   " HDMI Settings\n"       &
-   "\n"                     &
-   " 720p 50 Hz 16:9\n"     &
-   " 720p 60 Hz 16:9\n"     &
-   " 576p 50 Hz 4:3\n"      &
-   " 576p 50 Hz 5:4\n"      &
-   " 640x480 60 Hz\n"       &
-   " 720x480 59.94 Hz\n"    &
-   " 800x600 60 Hz\n"       &
-   "\n"                     &
-   " Back to main menu\n"   &
-   "\n"                     &
-   " Another Headline\n"    &
-   "\n"                     &
-   " HDMI: CRT emulation\n" &
-   " HDMI: Zoom-in\n"       &
-   " Audio improvements\n"  &
-   "\n"                     &
-   " Close Menu\n";
+   " HDMI: %s\n"            &  --  9
+   " HDMI Settings\n"       &  -- 10
+   "\n"                     &  -- 11
+   " 720p 50 Hz 16:9\n"     &  -- 12
+   " 720p 60 Hz 16:9\n"     &  -- 13
+   " 576p 50 Hz 4:3\n"      &  -- 14
+   " 576p 50 Hz 5:4\n"      &  -- 15
+   " 640x480 60 Hz\n"       &  -- 16
+   " 720x480 59.94 Hz\n"    &  -- 17
+   " 800x600 60 Hz\n"       &  -- 18
+   "\n"                     &  -- 19
+   " Back to main menu\n"   &  -- 20
 
--- define your own constants here and choose meaningful names
--- make sure that your first group uses the value 1 (0 means "no menu item", such as text and line),
--- and be aware that you can only have a maximum of 254 groups (255 means "Close Menu");
--- also make sure that your group numbers are monotonic increasing (e.g. 1, 2, 3, 4, ...)
--- single-select items and therefore also drive mount items need to have unique identifiers
-constant OPTM_G_Demo_A     : integer := 1;
-constant OPTM_G_HDMI       : integer := 2;
-constant OPTM_G_CRT        : integer := 3;
-constant OPTM_G_Zoom       : integer := 4;
-constant OPTM_G_Audio      : integer := 5;
+   "\n"                     &  -- 21
+   " Another Headline\n"    &  -- 22
+   "\n"                     &  -- 23
+
+   " HDMI: CRT emulation\n" &  -- 24
+   " HDMI: Zoom-in\n"       &  -- 25
+   " Audio improvements\n"  &  -- 26
+
+   " Second Fire: POTX\n"   &  -- 27
+   " Second Fire: POTY\n"   &  -- 28
+
+   " P1 POT Polarity: High\n"  &  -- 29
+   " P1 POT Polarity: Low\n"   &  -- 30
+
+   " P2 POT Polarity: High\n"  &  -- 31
+   " P2 POT Polarity: Low\n"   &  -- 32
+
+   "\n"                     &  -- 33
+
+   " DIP SW1\n"             &  -- 34
+   " SW1 Settings\n"        &  -- 35
+   "\n"                     &  -- 36
+   " SW1-1\n"               &  -- 37
+   " SW1-2\n"               &  -- 38
+   " SW1-3\n"               &  -- 39
+   " SW1-4\n"               &  -- 40
+   " SW1-5\n"               &  -- 41
+   " SW1-6\n"               &  -- 42
+   " SW1-7\n"               &  -- 43
+   " SW1-8\n"               &  -- 44
+   "\n"                     &  -- 45
+   " Back to main menu\n"   &  -- 46
+
+   " DIP SW2\n"             &  -- 47
+   " SW2 Settings\n"        &  -- 48
+   "\n"                     &  -- 49
+   " SW2-1\n"               &  -- 50
+   " SW2-2\n"               &  -- 51
+   " SW2-3\n"               &  -- 52
+   " SW2-4\n"               &  -- 53
+   " SW2-5\n"               &  -- 54
+   " SW2-6\n"               &  -- 55
+   " SW2-7\n"               &  -- 56
+   " SW2-8\n"               &  -- 57
+   "\n"                     &  -- 58
+   " Back to main menu\n"   &  -- 59
+
+   "\n"                     &  -- 60
+   " Close Menu\n";            -- 61
+
+
+--------------------------------------------------------------------------------------------------------------------
+-- Menu groups
+--------------------------------------------------------------------------------------------------------------------
+
+constant OPTM_G_Demo_A      : integer := 1;
+constant OPTM_G_HDMI        : integer := 2;
+constant OPTM_G_CRT         : integer := 3;
+constant OPTM_G_Zoom        : integer := 4;
+constant OPTM_G_Audio       : integer := 5;
+
+constant OPTM_G_SECOND_FIRE : integer := 6;
+constant OPTM_G_POTPOL      : integer := 7;   -- P1 polarity
+
+-- Black Tiger DIP SW1
+constant OPTM_G_SW1_0       : integer := 8;
+constant OPTM_G_SW1_1       : integer := 9;
+constant OPTM_G_SW1_2       : integer := 10;
+constant OPTM_G_SW1_3       : integer := 11;
+constant OPTM_G_SW1_4       : integer := 12;
+constant OPTM_G_SW1_5       : integer := 13;
+constant OPTM_G_SW1_6       : integer := 14;
+constant OPTM_G_SW1_7       : integer := 15;
+
+-- Black Tiger DIP SW2
+constant OPTM_G_SW2_0       : integer := 16;
+constant OPTM_G_SW2_1       : integer := 17;
+constant OPTM_G_SW2_2       : integer := 18;
+constant OPTM_G_SW2_3       : integer := 19;
+constant OPTM_G_SW2_4       : integer := 20;
+constant OPTM_G_SW2_5       : integer := 21;
+constant OPTM_G_SW2_6       : integer := 22;
+constant OPTM_G_SW2_7       : integer := 23;
+
+constant OPTM_G_P2_POTPOL   : integer := 24;  -- P2 polarity
+
 
 -- !!! DO NOT TOUCH !!!
-type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
+type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC - 1;
 
--- define your menu groups: which menu items are belonging together to form a group?
--- where are separator lines? which items should be selected by default?
--- make sure that you have exactly the same amount of entries here than in OPTM_ITEMS and defined by OPTM_SIZE
-constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Demo Headline A"
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_Demo_A + OPTM_G_START,             -- Item A.1, cursor start position
-                                             OPTM_G_Demo_A + OPTM_G_STDSEL,            -- Item A.2, selected by default
-                                             OPTM_G_Demo_A,                            -- Item A.3
-                                             OPTM_G_Demo_A,                            -- Item A.4
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Demo Headline B"
-                                             OPTM_G_LINE,                              -- Line
 
-                                             OPTM_G_SUBMENU,                           -- HDMI submenu block: START: "HDMI: %s"
-                                             OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "HDMI Settings"
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_HDMI + OPTM_G_STDSEL,              -- 720p 50 Hz 16:9, selected by default
-                                             OPTM_G_HDMI,                              -- 720p 60 Hz 16:9
-                                             OPTM_G_HDMI,                              -- 576p 50 Hz 4:3
-                                             OPTM_G_HDMI,                              -- 576p 50 Hz 5:4
-                                             OPTM_G_HDMI,                              -- 640x480 60 Hz
-                                             OPTM_G_HDMI,                              -- 720x480 59.94 Hz
-                                             OPTM_G_HDMI,                              -- 600p 60 Hz
-                                             OPTM_G_LINE,                              -- open
-                                             OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- Close submenu / back to main menu
-                                                                                       -- HDMI submenu block: END
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Another Headline"
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_CRT     + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
-                                             OPTM_G_Zoom    + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
-                                             OPTM_G_Audio   + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_CLOSE                              -- Close Menu
-                                           );
+constant OPTM_GROUPS : OPTM_GTYPE := (                                    
+                                       -- 0..8
+                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              --  0 Demo Headline A
+                                       OPTM_G_LINE,                                --  1
+                                       OPTM_G_Demo_A + OPTM_G_START,               --  2 Item A.1
+                                       OPTM_G_Demo_A + OPTM_G_STDSEL,              --  3 Item A.2
+                                       OPTM_G_Demo_A,                              --  4 Item A.3
+                                       OPTM_G_Demo_A,                              --  5 Item A.4
+                                       OPTM_G_LINE,                                --  6
+                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              --  7 Demo Headline B
+                                       OPTM_G_LINE,                                --  8
+                                    
+                                       -- HDMI submenu
+                                       OPTM_G_SUBMENU,                             --  9 HDMI: %s
+                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 10 HDMI Settings
+                                       OPTM_G_LINE,                                -- 11
+                                       OPTM_G_HDMI + OPTM_G_STDSEL,                -- 12 720p 50 Hz 16:9
+                                       OPTM_G_HDMI,                                -- 13 720p 60 Hz 16:9
+                                       OPTM_G_HDMI,                                -- 14 576p 50 Hz 4:3
+                                       OPTM_G_HDMI,                                -- 15 576p 50 Hz 5:4
+                                       OPTM_G_HDMI,                                -- 16 640x480 60 Hz
+                                       OPTM_G_HDMI,                                -- 17 720x480 59.94 Hz
+                                       OPTM_G_HDMI,                                -- 18 800x600 60 Hz
+                                       OPTM_G_LINE,                                -- 19
+                                       OPTM_G_CLOSE + OPTM_G_SUBMENU,              -- 20 Back to main menu
+                                    
+                                       OPTM_G_LINE,                                -- 21
+                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 22 Another Headline
+                                       OPTM_G_LINE,                                -- 23
+                                    
+                                       OPTM_G_CRT + OPTM_G_SINGLESEL,              -- 24 HDMI: CRT emulation
+                                       OPTM_G_Zoom + OPTM_G_SINGLESEL,             -- 25 HDMI: Zoom-in
+                                       OPTM_G_Audio + OPTM_G_SINGLESEL,            -- 26 Audio improvements
+                                    
+                                                                               -- Second fire - shared POTX/POTY selection
+                                       OPTM_G_SECOND_FIRE + OPTM_G_STDSEL,         -- 27 POTX
+                                       OPTM_G_SECOND_FIRE,                         -- 28 POTY
 
---------------------------------------------------------------------------------------------------------------------
--- !!! CAUTION: M2M FRAMEWORK CODE !!! DO NOT TOUCH ANYTHING BELOW THIS LINE !!!
---------------------------------------------------------------------------------------------------------------------
+                                        -- Player 1 POT polarity
+                                       OPTM_G_POTPOL + OPTM_G_STDSEL,              -- 29 High
+                                       OPTM_G_POTPOL,                              -- 30 Low
+
+                                        -- Player 2 POT polarity
+                                       OPTM_G_P2_POTPOL + OPTM_G_STDSEL,           -- 31 High
+                                       OPTM_G_P2_POTPOL,                           -- 32 Low
+
+                                       OPTM_G_LINE,                                -- 33
+
+                                        -- SW1 submenu
+                                       OPTM_G_SUBMENU,                             -- 34 DIP SW1
+                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 35 SW1 Settings
+                                       OPTM_G_LINE,                                -- 36
+
+                                        -- SW1 MAME defaults = FF
+                                       OPTM_G_SW1_0 + OPTM_G_SINGLESEL,                 -- 37 - Test
+                                       OPTM_G_SW1_1 + OPTM_G_SINGLESEL,                 -- 38
+                                       OPTM_G_SW1_2 + OPTM_G_SINGLESEL,                 -- 39
+                                       OPTM_G_SW1_3 + OPTM_G_SINGLESEL,                 -- 40
+                                       OPTM_G_SW1_4 + OPTM_G_SINGLESEL,                 -- 41
+                                       OPTM_G_SW1_5 + OPTM_G_SINGLESEL,                 -- 42
+                                       OPTM_G_SW1_6 + OPTM_G_SINGLESEL,                 -- 43
+                                       OPTM_G_SW1_7 + OPTM_G_SINGLESEL,                 -- 44
+
+                                       OPTM_G_LINE,                                -- 45
+                                       OPTM_G_CLOSE + OPTM_G_SUBMENU,              -- 46 Back
+
+                                        -- SW2 submenu
+                                       OPTM_G_SUBMENU,                             -- 47 DIP SW2
+                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 48 SW2 Settings
+                                       OPTM_G_LINE,                                -- 49
+
+                                        -- SW2 MAME defaults = F6
+                                       OPTM_G_SW2_0 + OPTM_G_SINGLESEL + OPTM_G_STDSEL, -- 50 = 0
+                                       OPTM_G_SW2_1 + OPTM_G_SINGLESEL,                 -- 51 = 1
+                                       OPTM_G_SW2_2 + OPTM_G_SINGLESEL,                 -- 52 = 1
+                                       OPTM_G_SW2_3 + OPTM_G_SINGLESEL + OPTM_G_STDSEL, -- 53 = 0
+                                       OPTM_G_SW2_4 + OPTM_G_SINGLESEL,                 -- 54 = 1
+                                       OPTM_G_SW2_5 + OPTM_G_SINGLESEL,                 -- 55 = 1
+                                       OPTM_G_SW2_6 + OPTM_G_SINGLESEL,                 -- 56 = 1
+                                       OPTM_G_SW2_7 + OPTM_G_SINGLESEL,                 -- 57 = 1
+
+                                       OPTM_G_LINE,                                -- 58
+                                       OPTM_G_CLOSE + OPTM_G_SUBMENU,              -- 59 Back
+
+                                       OPTM_G_LINE,                                -- 60
+                                       OPTM_G_CLOSE                                -- 61 Close Menu
+);
+
 
 --------------------------------------------------------------------------------------------------------------------
 -- Address Decoding

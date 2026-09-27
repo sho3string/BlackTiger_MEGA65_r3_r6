@@ -12,6 +12,11 @@ use ieee.numeric_std.all;
 
 library work;
 use work.video_modes_pkg.all;
+use work.globals.all;
+library work;
+use work.video_modes_pkg.all;
+library xpm;
+use xpm.vcomponents.all;
 
 entity main is
    generic (
@@ -69,7 +74,9 @@ entity main is
       dn_clk_i                : in  std_logic;
       dn_addr_i               : in  std_logic_vector(24 downto 0);
       dn_data_i               : in  std_logic_vector(7 downto 0);
-      dn_wr_i                 : in  std_logic
+      dn_wr_i                 : in  std_logic;
+      
+      osm_control_i           : in  std_logic_vector(255 downto 0)
    );
 end entity main;
 
@@ -83,7 +90,6 @@ signal keyboard_n          : std_logic_vector(79 downto 0);
 ---------------------------------------------------------------------------
 
 signal bt_pxl2_cen      : std_logic;
-
 signal bt_debug_view    : std_logic_vector(7 downto 0);
 
 -- Black Tiger ROM interfaces
@@ -121,6 +127,45 @@ signal bt_fm0           : signed(15 downto 0);
 signal bt_fm1           : signed(15 downto 0);
 signal bt_psg0          : signed(15 downto 0);
 signal bt_psg1          : signed(15 downto 0);
+
+
+signal bt_audio         : signed(15 downto 0);
+signal bt_audio_peak    : std_logic;
+
+-- Dip Switches
+signal bt_dipsw_a       : std_logic_vector(7 downto 0);
+signal bt_dipsw_b       : std_logic_vector(7 downto 0);
+signal bt_dipsw         : std_logic_vector(31 downto 0);
+
+signal bt_joystick1     : std_logic_vector(5 downto 0);
+signal bt_joystick2     : std_logic_vector(5 downto 0);
+signal shoot2_button1_n : std_logic := '1';
+signal shoot2_button2_n : std_logic := '1';
+signal pot1_val         : std_logic_vector(7 downto 0);
+signal pot2_val         : std_logic_vector(7 downto 0);
+signal potxy_sw         : std_logic;
+signal pot_pol1_sw      : std_logic;
+signal pot_pol2_sw      : std_logic;
+signal bt_coin          : std_logic_vector(3 downto 0);
+signal bt_cab_1p        : std_logic_vector(3 downto 0);
+
+-- Game player inputs
+constant m65_1          : integer := 56; --Player 1 Start
+constant m65_2          : integer := 59; --Player 2 Start
+constant m65_5          : integer := 16; --Insert coin 1
+constant m65_6          : integer := 19; --Insert coin 2
+
+-- Offer some keyboard controls in addition to Joy 1 Controls
+constant m65_up_crsr    : integer := 73; --Player up
+constant m65_vert_crsr  : integer := 7;  --Player down
+constant m65_left_crsr  : integer := 74; --Player left
+constant m65_horz_crsr  : integer := 2;  --Player right
+constant m65_z          : integer := 12; --Fire 1
+constant m65_x          : integer := 23; --Fire 2
+
+signal reset_async      : std_logic;
+signal reset_48         : std_logic;
+signal reset_24         : std_logic;
 
 component dualport_2clk_ram
    generic (
@@ -204,45 +249,240 @@ component jtbtiger_game
       fm1         : out signed(15 downto 0);
       psg0        : out signed(15 downto 0);
       psg1        : out signed(15 downto 0)
+   
+   );
+end component;
+
+component jtframe_mixer
+   generic (
+      W0   : integer := 16;
+      W1   : integer := 16;
+      W2   : integer := 16;
+      W3   : integer := 16;
+      WOUT : integer := 16
+   );
+   port (
+      rst   : in  std_logic;
+      clk   : in  std_logic;
+      cen   : in  std_logic;
+
+      ch0   : in  signed(W0-1 downto 0);
+      ch1   : in  signed(W1-1 downto 0);
+      ch2   : in  signed(W2-1 downto 0);
+      ch3   : in  signed(W3-1 downto 0);
+
+      gain0 : in  std_logic_vector(7 downto 0);
+      gain1 : in  std_logic_vector(7 downto 0);
+      gain2 : in  std_logic_vector(7 downto 0);
+      gain3 : in  std_logic_vector(7 downto 0);
+
+      mixed : out signed(WOUT-1 downto 0);
+      peak  : out std_logic
    );
 end component;
 
 begin
 
----------------------------------------------------------------------------
--- Black Tiger
----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
+    -- Black Tiger 
+    ---------------------------------------------------------------------------
+    
+    -- Packed download map:
+    --   $00000-$47FFF main CPU
+    --   $48000-$4FFFF sound CPU
+    --   $50000-$57FFF chars
+    --   $58000-$97FFF tiles
+    --   $98000-$D7FFF objects
+    --   $D8000-$D8FFF MCU
+    --   $D9000-$D93FF PROMs
+    --
+    -- Port A is the running core. Port B is QNICE and therefore uses FALLING_B,
+    -- matching the M2M dual-clock ROM convention.
+    
+    dn_main_lo_we <= dn_wr_i when unsigned(dn_addr_i) < 16#40000# else '0';
+    dn_main_hi_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#40000# and unsigned(dn_addr_i) < 16#48000# else '0';
+    dn_snd_we     <= dn_wr_i when unsigned(dn_addr_i) >= 16#48000# and unsigned(dn_addr_i) < 16#50000# else '0';
+    
+    -- 16-bit graphics ROMs are stored as two byte-wide BRAMs.  The generated
+    -- files are already interleaved, so dn_addr_i(0) selects the byte lane.
+    dn_char_lo_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#50000# and unsigned(dn_addr_i) < 16#58000# and dn_addr_i(0) = '0' else '0';
+    dn_char_hi_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#50000# and unsigned(dn_addr_i) < 16#58000# and dn_addr_i(0) = '1' else '0';
+    dn_scr_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '0' else '0';
+    dn_scr_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '1' else '0';
+    dn_obj_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '0' else '0';
+    dn_obj_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '1' else '0';
+    
+    dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9400# else '0';
 
--- Packed download map:
---   $00000-$47FFF main CPU
---   $48000-$4FFFF sound CPU
---   $50000-$57FFF chars
---   $58000-$97FFF tiles
---   $98000-$D7FFF objects
---   $D8000-$D8FFF MCU
---   $D9000-$D93FF PROMs
---
--- Port A is the running core. Port B is QNICE and therefore uses FALLING_B,
--- matching the M2M dual-clock ROM convention.
 
-dn_main_lo_we <= dn_wr_i when unsigned(dn_addr_i) < 16#40000# else '0';
-dn_main_hi_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#40000# and unsigned(dn_addr_i) < 16#48000# else '0';
-dn_snd_we     <= dn_wr_i when unsigned(dn_addr_i) >= 16#48000# and unsigned(dn_addr_i) < 16#50000# else '0';
+    audio_left_o  <= bt_audio;
+    audio_right_o <= bt_audio;
+    
 
--- 16-bit graphics ROMs are stored as two byte-wide BRAMs.  The generated
--- files are already interleaved, so dn_addr_i(0) selects the byte lane.
-dn_char_lo_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#50000# and unsigned(dn_addr_i) < 16#58000# and dn_addr_i(0) = '0' else '0';
-dn_char_hi_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#50000# and unsigned(dn_addr_i) < 16#58000# and dn_addr_i(0) = '1' else '0';
-dn_scr_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '0' else '0';
-dn_scr_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '1' else '0';
-dn_obj_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '0' else '0';
-dn_obj_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '1' else '0';
+    -- Black Tiger DIP switches
+    --
+    -- dipsw[15:8] = SW1
+    -- dipsw[ 7:0] = SW2
+    --
+    -- MAME defaults:
+    --   Coin A         1 Coin / 1 Credit
+    --   Coin B         1 Coin / 1 Credit
+    --   Flip Screen    Off
+    --   Test           Off
+    --   Lives          3
+    --   Difficulty     5 (Normal)
+    --   Demo Sounds    On
+    --   Allow Continue Yes
+    --   Cabinet        Upright
+    --   Freeze         Off
 
-dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9400# else '0';
+    -- SW1
+    bt_dipsw_a <= not (
+    osm_control_i(C_MENU_SW1_0) &
+    osm_control_i(C_MENU_SW1_1) &
+    osm_control_i(C_MENU_SW1_2) &
+    osm_control_i(C_MENU_SW1_3) &
+    osm_control_i(C_MENU_SW1_4) &
+    osm_control_i(C_MENU_SW1_5) &
+    osm_control_i(C_MENU_SW1_6) &
+    osm_control_i(C_MENU_SW1_7));
+
+    bt_dipsw_b <= not (
+    osm_control_i(C_MENU_SW2_0) &
+    osm_control_i(C_MENU_SW2_1) &
+    osm_control_i(C_MENU_SW2_2) &
+    osm_control_i(C_MENU_SW2_3) &
+    osm_control_i(C_MENU_SW2_4) &
+    osm_control_i(C_MENU_SW2_5) &
+    osm_control_i(C_MENU_SW2_6) &
+    osm_control_i(C_MENU_SW2_7));
+
+    -- JTFRAME Black Tiger consumes dipsw[15:0]:
+    -- [15:8] = SW1, [7:0] = SW2
+    bt_dipsw <= x"0000" & bt_dipsw_b & bt_dipsw_a;
+    
+    bt_joystick1(0) <= joy_1_right_n_i and keyboard_n(m65_horz_crsr);
+    bt_joystick1(1) <= joy_1_left_n_i  and keyboard_n(m65_left_crsr);
+    bt_joystick1(2) <= joy_1_down_n_i  and keyboard_n(m65_vert_crsr);
+    bt_joystick1(3) <= joy_1_up_n_i    and keyboard_n(m65_up_crsr);
+    
+    -- Button 1
+    bt_joystick1(4) <= joy_1_fire_n_i and keyboard_n(m65_z);
+    
+    -- Button 2
+    bt_joystick1(5) <= shoot2_button1_n and keyboard_n(m65_x);
+    
+    
+    bt_joystick2(0) <= joy_2_right_n_i;
+    bt_joystick2(1) <= joy_2_left_n_i;
+    bt_joystick2(2) <= joy_2_down_n_i;
+    bt_joystick2(3) <= joy_2_up_n_i;
+    
+    -- Button 1
+    bt_joystick2(4) <= joy_2_fire_n_i;
+    
+    -- Button 2
+    bt_joystick2(5) <= shoot2_button2_n;
+ 
+    
+    potxy_sw    <= osm_control_i(C_MENU_SECOND_FIRE); -- 0 = POTX, 1 = POTY
+    pot_pol1_sw <= osm_control_i(C_MENU_POTPOL);      -- P1: 1 = active-low, 0 = active-high
+    pot_pol2_sw <= osm_control_i(C_MENU_P2_POTPOL);   -- P2: 1 = active-low, 0 = active-high
+    
+    bt_coin(0) <= keyboard_n(m65_5);  -- Coin 1
+    bt_coin(1) <= keyboard_n(m65_6);  -- Coin 2
+    bt_coin(2) <= '1';
+    bt_coin(3) <= '1';
+    
+    bt_cab_1p(0) <= keyboard_n(m65_1);  -- 1P Start
+    bt_cab_1p(1) <= keyboard_n(m65_2);  -- 2P Start
+    bt_cab_1p(2) <= '1';
+    bt_cab_1p(3) <= '1';
+    
+    -- rst synchronizers
+    
+    i_reset_48 : xpm_cdc_async_rst
+    generic map (
+       RST_ACTIVE_HIGH => 1,
+       DEST_SYNC_FF    => 6
+    )
+    port map (
+       src_arst  => reset_async,
+       dest_clk  => clk_main_i,
+       dest_arst => reset_48
+    );
+    i_reset_24 : xpm_cdc_async_rst
+    generic map (
+       RST_ACTIVE_HIGH => 1,
+       DEST_SYNC_FF    => 6
+    )
+    port map (
+       src_arst  => reset_async,
+       dest_clk  => clk_24_i,
+       dest_arst => reset_24
+    );
+    reset_async <= reset_hard_i or reset_soft_i;
+    
+    second_button_proc : process(all)
+    begin
+    
+       ------------------------------------------------------------------------
+       -- Select POTX/POTY for both joystick ports
+       ------------------------------------------------------------------------
+       if potxy_sw = '0' then
+          pot1_val <= pot1_x_i;
+          pot2_val <= pot2_x_i;
+       else
+          pot1_val <= pot1_y_i;
+          pot2_val <= pot2_y_i;
+       end if;
+    
+       ------------------------------------------------------------------------
+       -- Player 1 second fire
+       ------------------------------------------------------------------------
+       if pot_pol1_sw = '1' then
+    
+          -- Active-low POT button
+          if unsigned(pot1_val) < unsigned'(x"80") then
+             shoot2_button1_n <= '0';
+          else
+             shoot2_button1_n <= '1';
+          end if;
+       else
+          -- Active-high POT button
+          if unsigned(pot1_val) >= unsigned'(x"80") then
+             shoot2_button1_n <= '0';
+          else
+             shoot2_button1_n <= '1';
+          end if;
+       end if;
+    
+    
+       ------------------------------------------------------------------------
+       -- Player 2 second fire
+       ------------------------------------------------------------------------
+       if pot_pol2_sw = '1' then
+          -- Active-low POT button
+          if unsigned(pot2_val) < unsigned'(x"80") then
+             shoot2_button2_n <= '0';
+          else
+             shoot2_button2_n <= '1';
+          end if;
+       else
+          -- Active-high POT button
+          if unsigned(pot2_val) >= unsigned'(x"80") then
+             shoot2_button2_n <= '0';
+          else
+             shoot2_button2_n <= '1';
+          end if;
+       end if;
+    end process;
+    
+    
 
 -- Main CPU ROM is 288 KiB, so split it into 256 KiB + 32 KiB instead of
 -- wasting a 512 KiB power-of-two BRAM allocation.
-i_main_rom_lo : dualport_2clk_ram
+   i_main_rom_lo : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 18)
    port map (
       clock_a   => clk_main_i,
@@ -254,7 +494,7 @@ i_main_rom_lo : dualport_2clk_ram
       wren_b    => dn_main_lo_we
    );
 
-i_main_rom_hi : dualport_2clk_ram
+   i_main_rom_hi : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 15)
    port map (
       clock_a   => clk_main_i,
@@ -266,9 +506,9 @@ i_main_rom_hi : dualport_2clk_ram
       wren_b    => dn_main_hi_we
    );
 
-bt_main_data <= bt_main_hi_data when bt_main_addr(18) = '1' else bt_main_lo_data;
+   bt_main_data <= bt_main_hi_data when bt_main_addr(18) = '1' else bt_main_lo_data;
 
-i_sound_rom : dualport_2clk_ram
+   i_sound_rom : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 15)
    port map (
       clock_a   => clk_main_i,
@@ -280,7 +520,7 @@ i_sound_rom : dualport_2clk_ram
       wren_b    => dn_snd_we
    );
 
-i_char_rom_lo : dualport_2clk_ram
+   i_char_rom_lo : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 14)
    port map (
       clock_a   => clk_main_i,
@@ -292,7 +532,7 @@ i_char_rom_lo : dualport_2clk_ram
       wren_b    => dn_char_lo_we
    );
 
-i_char_rom_hi : dualport_2clk_ram
+   i_char_rom_hi : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 14)
    port map (
       clock_a   => clk_main_i,
@@ -304,7 +544,7 @@ i_char_rom_hi : dualport_2clk_ram
       wren_b    => dn_char_hi_we
    );
 
-i_scroll_rom_lo : dualport_2clk_ram
+   i_scroll_rom_lo : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 17)
    port map (
       clock_a   => clk_main_i,
@@ -316,7 +556,7 @@ i_scroll_rom_lo : dualport_2clk_ram
       wren_b    => dn_scr_lo_we
    );
 
-i_scroll_rom_hi : dualport_2clk_ram
+   i_scroll_rom_hi : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 17)
    port map (
       clock_a   => clk_main_i,
@@ -328,7 +568,7 @@ i_scroll_rom_hi : dualport_2clk_ram
       wren_b    => dn_scr_hi_we
    );
 
-i_object_rom_lo : dualport_2clk_ram
+   i_object_rom_lo : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 17)
    port map (
       clock_a   => clk_main_i,
@@ -340,7 +580,7 @@ i_object_rom_lo : dualport_2clk_ram
       wren_b    => dn_obj_lo_we
    );
 
-i_object_rom_hi : dualport_2clk_ram
+   i_object_rom_hi : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 17)
    port map (
       clock_a   => clk_main_i,
@@ -352,12 +592,12 @@ i_object_rom_hi : dualport_2clk_ram
       wren_b    => dn_obj_hi_we
    );
 
-i_black_tiger : jtbtiger_game
+   i_black_tiger : jtbtiger_game
    port map (
       -- Clocks
-      rst         => reset_hard_i,
+      rst         => reset_48,
       clk         => clk_main_i,       -- 48 MHz
-      rst24       => reset_hard_i,     -- temporary: reset is synchronous to 48 MHz
+      rst24       => reset_24,         -- temporary: reset is synchronous to 48 MHz
       clk24       => clk_24_i,         -- 24 MHz
 
       -- Pixel enables
@@ -374,14 +614,15 @@ i_black_tiger : jtbtiger_game
       VS          => video_vs_o,
 
       -- Controls - temporary
-      cab_1p      => (others => '1'),
-      coin        => (others => '1'),
-      joystick1   => (others => '1'),
-      joystick2   => (others => '1'),
+      cab_1p      => bt_cab_1p,
+      coin        => bt_coin,
+      
+      joystick1   => bt_joystick1,
+      joystick2   => bt_joystick2,
 
-      dipsw       => (others => '0'), -- separate issue; DIP configuration
-      dip_pause   => '1', -- pause is active low, active high run
-      service     => '1', -- 1 = inactive not pressed
+      dipsw       => bt_dipsw,--(others => '0'), --
+      dip_pause   => '1',     -- pause is active low, active high run
+      service     => '0',     
       dip_flip    => open,
 
       gfx_en      => "1111",
@@ -419,19 +660,40 @@ i_black_tiger : jtbtiger_game
       prog_data   => x"00" & dn_data_i,
       prom_we     => dn_prom_we,
 
-      -- Audio - later
+      -- Audio
       fm0         => bt_fm0,
       fm1         => bt_fm1,
       psg0        => bt_psg0,
       psg1        => bt_psg1
    );
    
+   i_bt_audio_mixer : jtframe_mixer
+   generic map (
+      W0   => 16,
+      W1   => 16,
+      W2   => 16,
+      W3   => 16,
+      WOUT => 16
+   )
+   port map (
+      rst   => reset_hard_i,
+      clk   => clk_main_i,
+      cen   => '1',
+      
+      ch0   => bt_psg0,
+      ch1   => bt_psg1,
+      ch2   => bt_fm0,
+      ch3   => bt_fm1,
 
-    
-    -- Audio later
-    audio_left_o   <= (others => '0');
-    audio_right_o  <= (others => '0');
+      gain0 => x"28",
+      gain1 => x"28",
+      gain2 => x"17",
+      gain3 => x"17",
 
+      mixed => bt_audio,
+      peak  => bt_audio_peak
+   );
+   
    i_keyboard : entity work.keyboard
       port map (
          clk_main_i           => clk_main_i,

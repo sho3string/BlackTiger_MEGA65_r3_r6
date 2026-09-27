@@ -230,30 +230,17 @@ signal main_rst               : std_logic;
 signal clk_24                 : std_logic;
 signal rst_24                 : std_logic;
 
-   ---------------------------------------------------------------------------------------------
-   -- Black Tiger ROM download bus (QNICE clock domain)
-   ---------------------------------------------------------------------------------------------
-   signal qnice_dn_addr          : std_logic_vector(24 downto 0);
-   signal qnice_dn_data          : std_logic_vector(7 downto 0);
-   signal qnice_dn_wr            : std_logic;
-
-
-constant C_MENU_HDMI_16_9_50   : natural := 12;
-constant C_MENU_HDMI_16_9_60   : natural := 13;
-constant C_MENU_HDMI_4_3_50    : natural := 14;
-constant C_MENU_HDMI_5_4_50    : natural := 15;
-constant C_MENU_HDMI_640_60    : natural := 16;
-constant C_MENU_HDMI_720_5994  : natural := 17;
-constant C_MENU_SVGA_800_60    : natural := 18;
-
-constant C_MENU_CRT_EMULATION  : natural := 24;
-constant C_MENU_HDMI_ZOOM      : natural := 25;
-constant C_MENU_IMPROVE_AUDIO  : natural := 26;
+---------------------------------------------------------------------------------------------
+-- Black Tiger ROM download bus (QNICE clock domain)
+---------------------------------------------------------------------------------------------
+signal qnice_dn_addr          : std_logic_vector(24 downto 0);
+signal qnice_dn_data          : std_logic_vector(7 downto 0);
+signal qnice_dn_wr            : std_logic;
 
 -- QNICE clock domain
-signal qnice_demo_vd_data_o   : std_logic_vector(15 downto 0);
-signal qnice_demo_vd_ce       : std_logic;
-signal qnice_demo_vd_we       : std_logic;
+signal qnice_demo_vd_data_o     : std_logic_vector(15 downto 0);
+signal qnice_demo_vd_ce         : std_logic;
+signal qnice_demo_vd_we         : std_logic;
 
 
 -- Unprocessed video output from the core
@@ -422,7 +409,8 @@ begin
          dn_clk_i             => qnice_clk_i,
          dn_addr_i            => qnice_dn_addr,
          dn_data_i            => qnice_dn_data,
-         dn_wr_i              => qnice_dn_wr
+         dn_wr_i              => qnice_dn_wr,
+         osm_control_i        => main_osm_control_i
       ); -- i_main
       
     process (main_clk) -- 48 MHz
