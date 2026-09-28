@@ -79,6 +79,47 @@ def map12_single(data):
     return bytes(out)
 
 
+def sort_object_rom(data):
+    """
+    Restructure the Black Tiger object ROM into the linear sprite layout
+    expected by the MEGA65 implementation.
+
+    The original JTFRAME/MRA object image has address bits A2..A6 ordered as:
+
+        source A2 A3 A4 A5 A6
+             |  |  |  |  |
+        dest A3 A4 A5 A6 A2
+
+    Equivalently, for each destination address:
+        src A0 = dst A0
+        src A1 = dst A1
+        src A2 = dst A3
+        src A3 = dst A4
+        src A4 = dst A5
+        src A5 = dst A6
+        src A6 = dst A2
+
+    All address bits A7 and above are unchanged.
+    """
+
+    if len(data) != 0x40000:
+        raise RuntimeError(
+            f"Object ROM: expected 0x40000 bytes, got 0x{len(data):X}"
+        )
+
+    out = bytearray(len(data))
+
+    for dst in range(len(data)):
+        src = (
+            (dst & ~0x7C) |
+            ((dst & 0x04) << 4) |
+            ((dst & 0x78) >> 1)
+        )
+        out[dst] = data[src]
+
+    return bytes(out)
+
+
 # ---------------------------------------------------------------------------
 # Black Tiger
 # ---------------------------------------------------------------------------
@@ -170,10 +211,14 @@ def build(zip_path, outdir):
         obj_09 = read_rom(zf, "bd-09.8a", 0x10000)
         obj_07 = read_rom(zf, "bd-07.4a", 0x10000)
 
-        objects = (
+        objects_raw = (
             interleave16_map01_map10(obj_10, obj_08) +
             interleave16_map01_map10(obj_09, obj_07)
         )
+
+        # Reorder the object ROM address lines so btiger_obj.rom is emitted
+        # directly in the sprite layout used by the MEGA65 core.
+        objects = sort_object_rom(objects_raw)
 
         # ------------------------------------------------------------------
         # 8751 MCU
