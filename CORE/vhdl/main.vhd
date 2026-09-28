@@ -162,6 +162,8 @@ constant m65_left_crsr  : integer := 74; --Player left
 constant m65_horz_crsr  : integer := 2;  --Player right
 constant m65_z          : integer := 12; --Fire 1
 constant m65_x          : integer := 23; --Fire 2
+constant m65_9          : integer := 32; --Service button
+constant m65_p          : integer := 41; --Pause
 
 signal reset_async      : std_logic;
 signal reset_48         : std_logic;
@@ -317,7 +319,6 @@ begin
 
     audio_left_o  <= bt_audio;
     audio_right_o <= bt_audio;
-    
 
     -- Black Tiger DIP switches
     --
@@ -389,10 +390,10 @@ begin
     pot_pol1_sw <= osm_control_i(C_MENU_POTPOL);      -- P1: 1 = active-low, 0 = active-high
     pot_pol2_sw <= osm_control_i(C_MENU_P2_POTPOL);   -- P2: 1 = active-low, 0 = active-high
     
-    bt_coin(0) <= keyboard_n(m65_5);  -- Coin 1
-    bt_coin(1) <= keyboard_n(m65_6);  -- Coin 2
-    bt_coin(2) <= '1';
-    bt_coin(3) <= '1';
+    bt_coin(0) <= keyboard_n(m65_6);  -- Coin 1
+    bt_coin(1) <= keyboard_n(m65_5);  -- Coin 2
+    bt_coin(2) <= '1'; -- test with 0 tomorrow
+    bt_coin(3) <= '1'; -- test with 0 tomorrow
     
     bt_cab_1p(0) <= keyboard_n(m65_1);  -- 1P Start
     bt_cab_1p(1) <= keyboard_n(m65_2);  -- 2P Start
@@ -591,13 +592,14 @@ begin
       data_b    => dn_data_i,
       wren_b    => dn_obj_hi_we
    );
+   
 
    i_black_tiger : jtbtiger_game
    port map (
       -- Clocks
       rst         => reset_48,
       clk         => clk_main_i,       -- 48 MHz
-      rst24       => reset_24,         -- temporary: reset is synchronous to 48 MHz
+      rst24       => reset_24,         -- synchronized to 24 MHz
       clk24       => clk_24_i,         -- 24 MHz
 
       -- Pixel enables
@@ -621,8 +623,8 @@ begin
       joystick2   => bt_joystick2,
 
       dipsw       => bt_dipsw,--(others => '0'), --
-      dip_pause   => '1',     -- pause is active low, active high run
-      service     => '0',     
+      dip_pause   => keyboard_n(m65_p),-- '1',     -- pause is active low, active high run
+      service     => keyboard_n(m65_9), 
       dip_flip    => open,
 
       gfx_en      => "1111",
@@ -655,10 +657,12 @@ begin
 
       -- MCU + PROM programming.  jtbtiger_game decodes $D8000-$D8FFF as
       -- MCU and $D9000-$D93FF as the four 256-byte PROMs.
+      
       ioctl_addr  => '0' & dn_addr_i,
       prog_addr   => dn_addr_i,
       prog_data   => x"00" & dn_data_i,
       prom_we     => dn_prom_we,
+      
 
       -- Audio
       fm0         => bt_fm0,
