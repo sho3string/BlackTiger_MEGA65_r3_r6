@@ -121,6 +121,8 @@ signal dn_scr_hi_we     : std_logic;
 signal dn_obj_lo_we     : std_logic;
 signal dn_obj_hi_we     : std_logic;
 signal dn_prom_we       : std_logic;
+signal dn_scr_addr      : unsigned(17 downto 0);
+signal dn_obj_addr      : unsigned(17 downto 0);
 
 -- Audio - unused for now
 signal bt_fm0           : signed(15 downto 0);
@@ -148,6 +150,7 @@ signal pot_pol1_sw      : std_logic;
 signal pot_pol2_sw      : std_logic;
 signal bt_coin          : std_logic_vector(3 downto 0);
 signal bt_cab_1p        : std_logic_vector(3 downto 0);
+
 
 -- Game player inputs
 constant m65_1          : integer := 56; --Player 1 Start
@@ -315,7 +318,9 @@ begin
     dn_obj_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '1' else '0';
     
     dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9400# else '0';
-
+    
+    dn_scr_addr <= resize(unsigned(dn_addr_i) - to_unsigned(16#58000#, dn_addr_i'length),dn_scr_addr'length);
+    dn_obj_addr <= resize(unsigned(dn_addr_i) - to_unsigned(16#98000#, dn_addr_i'length),dn_obj_addr'length);
 
     audio_left_o  <= bt_audio;
     audio_right_o <= bt_audio;
@@ -423,6 +428,8 @@ begin
        dest_arst => reset_24
     );
     reset_async <= reset_hard_i or reset_soft_i;
+    
+  
     
     second_button_proc : process(all)
     begin
@@ -552,7 +559,7 @@ begin
       address_a => bt_scr_addr(17 downto 1),
       q_a       => bt_scr_data(7 downto 0),
       clock_b   => dn_clk_i,
-      address_b => dn_addr_i(17 downto 1),
+      address_b => std_logic_vector(dn_scr_addr(17 downto 1)),
       data_b    => dn_data_i,
       wren_b    => dn_scr_lo_we
    );
@@ -564,7 +571,7 @@ begin
       address_a => bt_scr_addr(17 downto 1),
       q_a       => bt_scr_data(15 downto 8),
       clock_b   => dn_clk_i,
-      address_b => dn_addr_i(17 downto 1),
+      address_b => std_logic_vector(dn_scr_addr(17 downto 1)),
       data_b    => dn_data_i,
       wren_b    => dn_scr_hi_we
    );
@@ -572,26 +579,26 @@ begin
    i_object_rom_lo : dualport_2clk_ram
    generic map (FALLING_B => true, ADDR_WIDTH => 17)
    port map (
-      clock_a   => clk_main_i,
-      address_a => bt_obj_addr(17 downto 1),
-      q_a       => bt_obj_data(7 downto 0),
-      clock_b   => dn_clk_i,
-      address_b => dn_addr_i(17 downto 1),
-      data_b    => dn_data_i,
-      wren_b    => dn_obj_lo_we
-   );
+       clock_a   => clk_main_i,
+       address_a => bt_obj_addr(17 downto 1),
+       q_a       => bt_obj_data(7 downto 0),
+       clock_b   => dn_clk_i,
+       address_b => std_logic_vector(dn_obj_addr(17 downto 1)),
+       data_b    => dn_data_i,
+       wren_b    => dn_obj_lo_we
+    );
 
-   i_object_rom_hi : dualport_2clk_ram
-   generic map (FALLING_B => true, ADDR_WIDTH => 17)
-   port map (
-      clock_a   => clk_main_i,
-      address_a => bt_obj_addr(17 downto 1),
-      q_a       => bt_obj_data(15 downto 8),
-      clock_b   => dn_clk_i,
-      address_b => dn_addr_i(17 downto 1),
-      data_b    => dn_data_i,
-      wren_b    => dn_obj_hi_we
-   );
+    i_object_rom_hi : dualport_2clk_ram
+    generic map (FALLING_B => true, ADDR_WIDTH => 17)
+    port map (
+       clock_a   => clk_main_i,
+       address_a => bt_obj_addr(17 downto 1),
+       q_a       => bt_obj_data(15 downto 8),
+       clock_b   => dn_clk_i,
+       address_b => std_logic_vector(dn_obj_addr(17 downto 1)),
+       data_b    => dn_data_i,
+       wren_b    => dn_obj_hi_we
+    );
    
 
    i_black_tiger : jtbtiger_game
