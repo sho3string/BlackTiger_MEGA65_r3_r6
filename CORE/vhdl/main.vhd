@@ -836,8 +836,8 @@ bt_prior_data <= bt_prior_data8(3 downto 0);
       ch2   => bt_fm0,
       ch3   => bt_fm1,
 
-      gain0 => x"28",
-      gain1 => x"28",
+      gain0 => x"17",
+      gain1 => x"17",
       gain2 => x"17",
       gain3 => x"17",
 

@@ -98,6 +98,10 @@ wire [12:0] cpu_AB;
 wire [10:0] scr_hpos, scr_vpos;
 wire [ 8:0] obj_AB, V, H;
 wire [ 7:0] mcu_din, mcu_dout, cpu_dout, char_dout, scr_dout, snd_latch, main_ram;
+
+wire [9:0] psg0_raw;
+wire [9:0] psg1_raw;
+
 wire [ 4:0] prom;
 wire [ 1:0] scr_bank;
 wire        mcu_wr, mcu_rd, preLHBL, preLVBL, sres_b,
@@ -261,8 +265,10 @@ jtgng_sound #(.LAYOUT(4)) u_sound (
     // sound output
     .fm0            ( fm0            ),
     .fm1            ( fm1            ),
-    .psg0           ( psg0           ),
-    .psg1           ( psg1           ),
+    //.psg0           ( psg0           ),
+    //.psg1           ( psg1           ),
+    .psg0           ( psg0_raw       ),
+    .psg1           ( psg1_raw       ),
     // Unused
     .mcu_sdin       ( 8'd0           ),
     .mcu_srd        (                ),
@@ -270,6 +276,9 @@ jtgng_sound #(.LAYOUT(4)) u_sound (
     .debug_view     (                ),
     .debug_bus      ( debug_bus      )
 );
+
+assign psg0 = { 1'b0, psg0_raw, 5'd0 };
+assign psg1 = { 1'b0, psg1_raw, 5'd0 };
 
 jtbtiger_video u_video(
     .rst        ( rst           ),
