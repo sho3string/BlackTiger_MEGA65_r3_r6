@@ -172,6 +172,18 @@ signal reset_async      : std_logic;
 signal reset_48         : std_logic;
 signal reset_24         : std_logic;
 
+signal bt_main_addr_d   : std_logic_vector(bt_main_addr'range);
+signal bt_snd_addr_d    : std_logic_vector(bt_snd_addr'range);
+signal bt_char_addr_d   : std_logic_vector(bt_char_addr'range);
+signal bt_scr_addr_d    : std_logic_vector(bt_scr_addr'range);
+signal bt_obj_addr_d    : std_logic_vector(bt_obj_addr'range);
+
+signal bt_main_ok       : std_logic;
+signal bt_snd_ok        : std_logic;
+signal bt_char_ok       : std_logic;
+signal bt_scr_ok        : std_logic;
+signal bt_obj_ok        : std_logic;
+
 component dualport_2clk_ram
    generic (
       FALLING_A  : boolean := false;
@@ -376,7 +388,7 @@ begin
     bt_joystick1(4) <= joy_1_fire_n_i and keyboard_n(m65_z);
     
     -- Button 2
-    bt_joystick1(5) <= shoot2_button1_n and keyboard_n(m65_x);
+    bt_joystick1(5) <= keyboard_n(m65_x); --shoot2_button1_n and 
     
     
     bt_joystick2(0) <= joy_2_right_n_i;
@@ -385,10 +397,10 @@ begin
     bt_joystick2(3) <= joy_2_up_n_i;
     
     -- Button 1
-    bt_joystick2(4) <= joy_2_fire_n_i;
+    bt_joystick2(4) <= joy_2_fire_n_i and keyboard_n(m65_z);
     
     -- Button 2
-    bt_joystick2(5) <= shoot2_button2_n;
+    bt_joystick2(5) <= keyboard_n(m65_x); --shoot2_button2_n;
  
     
     potxy_sw    <= osm_control_i(C_MENU_SECOND_FIRE); -- 0 = POTX, 1 = POTY
@@ -642,24 +654,24 @@ begin
       -- ROM interfaces
       main_addr   => bt_main_addr,
       main_cs     => bt_main_cs,
-      main_ok     => '1',
+      main_ok     => bt_main_ok,
       main_data   => bt_main_data,
-
+    
       snd_addr    => bt_snd_addr,
       snd_cs      => bt_snd_cs,
-      snd_ok      => '1',
+      snd_ok      => bt_snd_ok,
       snd_data    => bt_snd_data,
-
+    
       char_addr   => bt_char_addr,
-      char_ok     => '1',
+      char_ok     => bt_char_ok,
       char_data   => bt_char_data,
-
+    
       scr_addr    => bt_scr_addr,
-      scr_ok      => '1',
+      scr_ok      => bt_scr_ok,
       scr_data    => bt_scr_data,
-
+    
       obj_addr    => bt_obj_addr,
-      obj_ok      => '1',
+      obj_ok      => bt_obj_ok,
       obj_data    => bt_obj_data,
 
       -- MCU + PROM programming.  jtbtiger_game decodes $D8000-$D8FFF as
@@ -677,6 +689,53 @@ begin
       psg0        => bt_psg0,
       psg1        => bt_psg1
    );
+   
+   process(clk_main_i)
+    begin
+       if rising_edge(clk_main_i) then
+    
+          -- Main ROM
+          bt_main_addr_d <= bt_main_addr;
+          if bt_main_addr = bt_main_addr_d then
+             bt_main_ok <= '1';
+          else
+             bt_main_ok <= '0';
+          end if;
+    
+          -- Sound ROM
+          bt_snd_addr_d <= bt_snd_addr;
+          if bt_snd_addr = bt_snd_addr_d then
+             bt_snd_ok <= '1';
+          else
+             bt_snd_ok <= '0';
+          end if;
+    
+          -- Character ROM
+          bt_char_addr_d <= bt_char_addr;
+          if bt_char_addr = bt_char_addr_d then
+             bt_char_ok <= '1';
+          else
+             bt_char_ok <= '0';
+          end if;
+    
+          -- Scroll ROM
+          bt_scr_addr_d <= bt_scr_addr;
+          if bt_scr_addr = bt_scr_addr_d then
+             bt_scr_ok <= '1';
+          else
+             bt_scr_ok <= '0';
+          end if;
+    
+          -- Object ROM
+          bt_obj_addr_d <= bt_obj_addr;
+          if bt_obj_addr = bt_obj_addr_d then
+             bt_obj_ok <= '1';
+          else
+             bt_obj_ok <= '0';
+          end if;
+    
+       end if;
+    end process;
    
    i_bt_audio_mixer : jtframe_mixer
    generic map (
