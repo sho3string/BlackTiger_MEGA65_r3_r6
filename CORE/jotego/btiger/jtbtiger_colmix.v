@@ -31,9 +31,14 @@ module jtbtiger_colmix(
     output     [3:0] green,
     output     [3:0] blue,
     // Priority PROMs bd01.8j
-    input [7:0]     prog_addr,
-    input           prom_prior_we,
-    input [3:0]     prom_din
+    //input [7:0]     prog_addr,
+    //input           prom_prior_we,
+    //input [3:0]     prom_din
+    
+    // Priority PROM bd01.8j - external ROM
+    output [7:0]    prior_rom_addr,
+    output          prior_rom_cen,
+    input  [3:0]    prior_rom_data
 );
 
 reg  [9:0] pixel_mux;
@@ -102,6 +107,8 @@ jtgng_dual_ram #(.AW(10),.DW(4),.SIMFILE("b_ram.bin")) u_blue(
 
 // Clock must be faster than 6MHz so selbus is ready for the next
 // 6MHz clock cycle:
+
+/*
 jtframe_prom #(.AW(8),.DW(4),.SIMFILE("../../../rom/btiger/bd01.8j")) u_selbus(
     .clk    ( clk           ),
     .cen    ( cen12         ),
@@ -110,7 +117,14 @@ jtframe_prom #(.AW(8),.DW(4),.SIMFILE("../../../rom/btiger/bd01.8j")) u_selbus(
     .wr_addr( prog_addr     ),
     .we     ( prom_prior_we ),
     .q      ( selbus        )
-);
+);*/
+
+// Priority PROM bd01.8j is stored externally.
+// Clock must be faster than 6MHz so selbus is ready for the next
+// 6MHz clock cycle.
+assign prior_rom_addr = seladdr;
+assign prior_rom_cen  = cen12;
+assign selbus         = prior_rom_data;
 
 jtframe_blank #(.DLY(8),.DW(12)) u_dly(
     .clk        ( clk                 ),

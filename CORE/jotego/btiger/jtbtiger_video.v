@@ -57,9 +57,15 @@ module jtbtiger_video(
     output              LHBL,
     output              LVBL,
     // Palette PROMs
-    input       [7:0]   prog_addr,
-    input               prom_prior_we,
-    input       [3:0]   prom_din,
+    //input       [7:0]   prog_addr,
+    //input               prom_prior_we,
+    //input       [3:0]   prom_din,
+    
+    // Priority PROM bd01.8j
+    output      [7:0]   prior_rom_addr,
+    output              prior_rom_cen,
+    input       [3:0]   prior_rom_data,
+    
     // Palette RAM
     input               blue_cs,
     input               redgreen_cs,
@@ -224,9 +230,14 @@ jtbtiger_colmix u_colmix (
     .LHBL         ( LHBL          ),
 
     // Priority PROM
-    .prog_addr    ( prog_addr     ),
-    .prom_prior_we( prom_prior_we ),
-    .prom_din     ( prom_din      ),
+    //.prog_addr    ( prog_addr     ),
+    //.prom_prior_we( prom_prior_we ),
+    //.prom_din     ( prom_din      ),
+    
+    // Priority PROM
+    .prior_rom_addr ( prior_rom_addr ),
+    .prior_rom_cen  ( prior_rom_cen  ),
+    .prior_rom_data ( prior_rom_data ),
 
     // CPU interface
     .AB           ( cpu_AB[9:0]   ),

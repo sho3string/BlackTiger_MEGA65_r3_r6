@@ -109,6 +109,11 @@ signal bt_scr_addr      : std_logic_vector(17 downto 1);
 signal bt_scr_data      : std_logic_vector(15 downto 0);
 signal bt_obj_addr      : std_logic_vector(17 downto 1);
 signal bt_obj_data      : std_logic_vector(15 downto 0);
+signal bt_mcu_addr      : std_logic_vector(11 downto 0);
+signal bt_mcu_data      : std_logic_vector(7 downto 0);
+signal bt_mcu_cen       : std_logic;
+signal dn_mcu_we        : std_logic;
+
 
 -- Download chip selects. The incoming address is the packed JTFRAME ROM map.
 signal dn_main_lo_we    : std_logic;
@@ -123,6 +128,12 @@ signal dn_obj_hi_we     : std_logic;
 signal dn_prom_we       : std_logic;
 signal dn_scr_addr      : unsigned(17 downto 0);
 signal dn_obj_addr      : unsigned(17 downto 0);
+signal bt_prior_addr    : std_logic_vector(7 downto 0);
+signal bt_prior_cen     : std_logic;
+signal bt_prior_data    : std_logic_vector(3 downto 0);
+signal bt_prior_data8   : std_logic_vector(7 downto 0);
+
+signal dn_prior_we    : std_logic;
 
 -- Audio - unused for now
 signal bt_fm0           : signed(15 downto 0);
@@ -184,6 +195,8 @@ signal bt_char_ok       : std_logic;
 signal bt_scr_ok        : std_logic;
 signal bt_obj_ok        : std_logic;
 
+
+
 component dualport_2clk_ram
    generic (
       FALLING_A  : boolean := false;
@@ -192,9 +205,11 @@ component dualport_2clk_ram
    );
    port (
       clock_a   : in  std_logic;
+      clen_a    : in  std_logic := '1';
       address_a : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       q_a       : out std_logic_vector(7 downto 0);
       clock_b   : in  std_logic;
+      clen_b    : in  std_logic := '1';
       address_b : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
       data_b    : in  std_logic_vector(7 downto 0);
       wren_b    : in  std_logic
@@ -265,7 +280,17 @@ component jtbtiger_game
       fm0         : out signed(15 downto 0);
       fm1         : out signed(15 downto 0);
       psg0        : out signed(15 downto 0);
-      psg1        : out signed(15 downto 0)
+      psg1        : out signed(15 downto 0);
+      
+ 
+      mcu_rom_addr: out std_logic_vector(11 downto 0);
+      mcu_rom_cen : out std_logic;
+      mcu_rom_data: out std_logic_vector(7 downto 0);
+      
+      -- Priority PROM
+      prior_rom_addr : out std_logic_vector(7 downto 0);
+      prior_rom_cen  : out std_logic;
+      prior_rom_data : in  std_logic_vector(3 downto 0)
    
    );
 end component;
@@ -328,8 +353,18 @@ begin
     dn_scr_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '1' else '0';
     dn_obj_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '0' else '0';
     dn_obj_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '1' else '0';
+
+    --dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9400# else '0';
+    dn_mcu_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) <  16#D9000# else '0';
+    dn_prom_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#D9000# and unsigned(dn_addr_i) <  16#D9400# else '0';
     
-    dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9400# else '0';
+    -- Black Tiger priority PROM bd01.8j
+    -- $D9000-$D90FF
+    dn_prior_we <= '1' when
+       dn_wr_i = '1' and
+       unsigned(dn_addr_i) >= to_unsigned(16#D9000#, dn_addr_i'length) and
+       unsigned(dn_addr_i) <  to_unsigned(16#D9100#, dn_addr_i'length)
+       else '0';
     
     dn_scr_addr <= resize(unsigned(dn_addr_i) - to_unsigned(16#58000#, dn_addr_i'length),dn_scr_addr'length);
     dn_obj_addr <= resize(unsigned(dn_addr_i) - to_unsigned(16#98000#, dn_addr_i'length),dn_obj_addr'length);
@@ -611,6 +646,44 @@ begin
        data_b    => dn_data_i,
        wren_b    => dn_obj_hi_we
     );
+    
+    i_mcu_rom : dualport_2clk_ram
+    generic map (FALLING_B  => true,ADDR_WIDTH => 12)
+    port map (
+      -- MCU read side
+      clock_a   => clk_24_i,
+      clen_a    => bt_mcu_cen,
+      address_a => bt_mcu_addr,
+      q_a       => bt_mcu_data,
+
+      -- QNICE programming side
+      clock_b   => dn_clk_i,
+      address_b => dn_addr_i(11 downto 0),
+      data_b    => dn_data_i,
+      wren_b    => dn_mcu_we
+    );
+    
+    i_priority_rom : dualport_2clk_ram
+    generic map (
+       FALLING_B  => true,
+       ADDR_WIDTH => 8
+    )
+    port map (
+       -- Black Tiger runtime read port
+       clock_a   => clk_main_i,
+       clen_a    => bt_prior_cen,
+       address_a => bt_prior_addr,
+       q_a       => bt_prior_data8,
+    
+       -- QNICE download port
+       clock_b   => dn_clk_i,
+       clen_b    => '1',
+       address_b => dn_addr_i(7 downto 0),
+       data_b    => dn_data_i,
+       wren_b    => dn_prior_we
+    );
+
+bt_prior_data <= bt_prior_data8(3 downto 0);
    
 
    i_black_tiger : jtbtiger_game
@@ -682,7 +755,15 @@ begin
       prog_data   => x"00" & dn_data_i,
       prom_we     => dn_prom_we,
       
-
+      mcu_rom_addr => bt_mcu_addr,
+      mcu_rom_cen  => bt_mcu_cen,
+      mcu_rom_data => bt_mcu_data,
+      
+      -- Priority PROM
+      prior_rom_addr => bt_prior_addr,
+      prior_rom_cen  => bt_prior_cen,
+      prior_rom_data => bt_prior_data,
+      
       -- Audio
       fm0         => bt_fm0,
       fm1         => bt_fm1,

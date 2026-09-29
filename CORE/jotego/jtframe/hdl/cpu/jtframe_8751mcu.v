@@ -28,10 +28,14 @@ module jtframe_8751mcu(
     output reg        x_acc,
 
     // ROM programming
-    input         clk_rom,
-    input [11:0]  prog_addr,
-    input [ 7:0]  prom_din,
-    input         prom_we
+    //input         clk_rom,
+    //input [11:0]  prog_addr,
+    //input [ 7:0]  prom_din,
+    //input         prom_we,
+    
+    output [11:0] rom_addr_o,
+    output        rom_cen_o,
+    input  [7:0]  rom_data_i
 );
 
 parameter ROMBIN="",
@@ -75,6 +79,7 @@ jtframe_sync #(.W(2)) u_sync(
     .sync   ( {int1n_s, int0n_s } )
 );
 
+/*
 // You need to clock gate for reading or the MCU won't work
 jtframe_dual_ram_cen #(.AW(12),.SIMFILE(ROMBIN)) u_prom(
     .clk0   ( clk_rom   ),
@@ -92,6 +97,7 @@ jtframe_dual_ram_cen #(.AW(12),.SIMFILE(ROMBIN)) u_prom(
     .we1    ( 1'b0      ),
     .q1     ( rom_data  )
 );
+*/
 
 jtframe_ram_rst #(.AW(7),.CEN_RD(1)) u_ramu(
     .rst        ( rst               ),

@@ -76,7 +76,17 @@ module jtbtiger_game(
     output signed [15:0] fm0,
     output signed [15:0] fm1,
     output signed [15:0] psg0,
-    output signed [15:0] psg1
+    output signed [15:0] psg1,
+    
+    // MCU 
+    output [11:0] mcu_rom_addr,
+    output        mcu_rom_cen,
+    input  [7:0] mcu_rom_data,
+    
+    // Priority PROM
+    output [7:0] prior_rom_addr,
+    output       prior_rom_cen,
+    input  [3:0] prior_rom_data
 );
 
 `define JTFRAME_PROM_START 26'hD8000
@@ -97,8 +107,8 @@ wire        mcu_wr, mcu_rd, preLHBL, preLVBL, sres_b,
             rd, cpu_cen, char_busy, scr_busy, mcuover,
             scr_layout, HINIT, char_cs, flip, scr_cs;
 reg         pause;
-wire        prom_prior_we = prom[0];
-wire        prom_mcu      = prom[4];
+//wire        prom_prior_we = prom[0];
+//wire        prom_mcu      = prom[4];
 
 assign debug_view  = { 5'd0, OBJON, SCRON, CHRON };
 assign dip_flip    = ~dipsw[6];
@@ -216,15 +226,19 @@ jtbtiger_main u_main(
 jtbtiger_mcu u_mcu(
     .rst        (  rst24      ),
     .clk        (  clk24      ),
-    .clk_rom    (  clk        ),
+    //.clk_rom    (  clk        ),
     .LVBL       ( LVBL        ),
     .mcu_dout   (  mcu_dout   ),
     .mcu_din    (  mcu_din    ),
     .mcu_wr     (  mcu_wr     ),
     .mcu_rd     (  mcu_rd     ),
-    .prog_addr  (  prog_addr[11:0]  ),
-    .prom_din   (  prog_data  ),
-    .prom_we    (  prom_mcu   )
+    //.prog_addr  (  prog_addr[11:0]  ),
+    //.prom_din   (  prog_data  ),
+    //.prom_we    (  prom_mcu   )
+    
+    .rom_addr_o ( mcu_rom_addr ),
+    .rom_cen_o  ( mcu_rom_cen  ),
+    .rom_data_i ( mcu_rom_data )
 );
 `else
 assign mcu_dout = 8'hff;
@@ -305,9 +319,14 @@ jtbtiger_video u_video(
     .blcnten    ( blcnten       ), // bus line counter enable
     .OBJON      ( OBJON         ),
     // PROMs
-    .prog_addr    ( prog_addr[7:0]),
-    .prom_prior_we( prom_prior_we ),
-    .prom_din     ( prog_data[3:0]),
+    //.prog_addr    ( prog_addr[7:0]),
+    //.prom_prior_we( prom_prior_we ),
+    //.prom_din     ( prog_data[3:0]),
+    
+    .prior_rom_addr  ( prior_rom_addr ),
+    .prior_rom_cen   ( prior_rom_cen  ),
+    .prior_rom_data  ( prior_rom_data ),
+    
     // Palette RAM
     .blue_cs    ( blue_cs       ),
     .redgreen_cs( redgreen_cs   ),

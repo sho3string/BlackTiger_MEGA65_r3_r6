@@ -8,7 +8,7 @@
 module jtbtiger_mcu(
     input                rst,
     input                clk,       // 24 MHz
-    input                clk_rom,
+    //input                clk_rom,
     input                LVBL,
     // Main CPU interface
     output       [ 7:0]  mcu_dout,
@@ -16,9 +16,13 @@ module jtbtiger_mcu(
     input                mcu_wr,
     input                mcu_rd,
     // ROM programming
-    input        [11:0]  prog_addr,
-    input        [ 7:0]  prom_din,
-    input                prom_we
+    //input        [11:0]  prog_addr,
+    //input        [ 7:0]  prom_din,
+    //input                prom_we
+    
+    output [11:0] rom_addr_o,
+    output        rom_cen_o,
+    input  [7:0] rom_data_i
 );
 
 wire [ 7:0] p1_o, p2_o, p3_o;
@@ -77,10 +81,16 @@ jtframe_8751mcu u_mcu(
     .x_acc      (           ),
 
     // ROM programming
-    .clk_rom    ( clk_rom   ),
-    .prog_addr  ( prog_addr ),
-    .prom_din   ( prom_din  ),
-    .prom_we    ( prom_we   )
+    //.clk_rom    ( clk_rom   ),
+    //.prog_addr  ( prog_addr ),
+    //.prom_din   ( prom_din  ),
+    //.prom_we    ( prom_we   )
+    
+    .rom_addr_o ( rom_addr_o ),
+    .rom_cen_o  ( rom_cen_o  ),
+    .rom_data_i ( rom_data_i )
+    
+    
 );
 
 endmodule
