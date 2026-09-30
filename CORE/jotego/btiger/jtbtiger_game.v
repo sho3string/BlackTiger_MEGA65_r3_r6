@@ -86,10 +86,8 @@ module jtbtiger_game(
     // Priority PROM
     output [7:0] prior_rom_addr,
     output       prior_rom_cen,
-    input  [3:0] prior_rom_data,
+    input  [3:0] prior_rom_data
     
-    // temporary
-    output [11:0] mcu_debug_pre_rom
 );
 
 `define JTFRAME_PROM_START 26'hD8000
@@ -245,9 +243,8 @@ jtbtiger_mcu u_mcu(
     
     .rom_addr_o ( mcu_rom_addr ),
     .rom_cen_o  ( mcu_rom_cen  ),
-    .rom_data_i ( mcu_rom_data ),
-    // temporary
-    .debug_pre_rom_o ( mcu_debug_pre_rom )
+    .rom_data_i ( mcu_rom_data )
+    
 );
 `else
 assign mcu_dout = 8'hff;

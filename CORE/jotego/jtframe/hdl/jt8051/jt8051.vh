@@ -24,6 +24,10 @@ reg [14:0] jsr_ua, jsr_ret, uaddr;
 reg  [47:0] ucode_rom[0:2**15-1];
 wire [47:0] ucode_data;
 
+
+// IMPORTANT: jt8051.uc must be included in the Vivado project.
+// Without it the JT8051 control microcode is uninitialized and
+// the MCU CPU will not execute and game will be stuck on warning screen
 initial begin
     $readmemb("jt8051.uc",ucode_rom);
 end

@@ -22,10 +22,7 @@ module jtbtiger_mcu(
     
     output [11:0] rom_addr_o,
     output        rom_cen_o,
-    input  [7:0] rom_data_i,
-    
-    //temporary
-    output [11:0] debug_pre_rom_o
+    input  [7:0] rom_data_i
 );
 
 wire [ 7:0] p1_o, p2_o, p3_o;
@@ -91,8 +88,7 @@ jtframe_8751mcu u_mcu(
     
     .rom_addr_o ( rom_addr_o ),
     .rom_cen_o  ( rom_cen_o  ),
-    .rom_data_i ( rom_data_i ),
-    .debug_pre_rom_o ( debug_pre_rom_o )
+    .rom_data_i ( rom_data_i )
     
     
 );

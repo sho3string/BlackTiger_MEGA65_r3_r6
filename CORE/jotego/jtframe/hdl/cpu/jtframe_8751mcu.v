@@ -35,10 +35,8 @@ module jtframe_8751mcu(
     
     output [11:0] rom_addr_o,
     output        rom_cen_o,
-    input  [7:0]  rom_data_i,
+    input  [7:0]  rom_data_i
     
-    // temporary
-    output [11:0] debug_pre_rom_o
 );
 
 parameter ROMBIN="",
@@ -62,10 +60,6 @@ wire        cen_eff = cen;
 assign      rom_addr_o = rom_addr[11:0];
 assign      rom_cen_o  = cen_eff;
 assign      rom_data   = rom_data_i;
-
-// temporary
-assign debug_pre_rom_o = pre_rom[11:0];
-
 
 always @(posedge clk) begin
     if (rst) begin
@@ -92,6 +86,7 @@ jtframe_sync #(.W(2)) u_sync(
 
 /*
 // You need to clock gate for reading or the MCU won't work
+// You also need to make sure jt8051.uc is read successfully
 jtframe_dual_ram_cen #(.AW(12),.SIMFILE(ROMBIN)) u_prom(
     .clk0   ( clk_rom   ),
     .cen0   ( 1'b1      ),
