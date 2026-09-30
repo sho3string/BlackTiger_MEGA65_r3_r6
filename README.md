@@ -1,64 +1,246 @@
-MiSTer2MEGA65
-=============
+# Black Tiger - for MEGA65
 
-MiSTer2MEGA65 is a framework to simplify porting MiSTer cores to the MEGA65.
+Black Tiger is Capcom's 1987 arcade action-platform game. The player
+takes control of a barbarian warrior and fights through vertically
+scrolling stages filled with enemies, traps, treasure and hidden areas.
 
-![Title Image](doc/wiki/assets/MiSTer2MEGA65-Title.png)
+This project ports the Black Tiger FPGA core from **Jotego's JTCORES
+project** to the MEGA65.
 
-Learn more by
-[watching this YouTube video](https://youtu.be/9Ib7z64z9N4)
-and get started by reading the
-[MiSTer2MEGA65 Wiki](https://github.com/sy2002/MiSTer2MEGA65/wiki).
+The upstream Black Tiger core used as the basis of this port is:
 
-TL;DR
------
+[Jotego JTCORES - Black
+Tiger](https://github.com/jotego/jtcores/tree/90bab1b9dc7a6f190f78b6b51b54ba59476d3c53/cores/btiger)
 
-1. Scroll up and press the "Use this template" button to start a new
-   MiSTer2MEGA65 project. Then fork the MiSTer core you want to port
-   and make it a Git submodule of your newly created project.
+The original Black Tiger FPGA implementation, JTFRAME infrastructure and
+associated supporting cores are the work of **Jotego and the JTCORES
+contributors**.
 
-2. Wrap the MiSTer core inside `CORE/vhdl/main.vhd` while
-   adjusting the clocks in `CORE/vhdl/clk.vhd`. Provide RAMs, ROMs and other
-   devices in `CORE/vhdl/mega65.vhd` and wire everything correctly.
 
-3. Configure your core's behavior, including how the start screen looks like,
-   what ROMs should be loaded (and where to), the abilities of the
-   <kbd>Help</kbd> menu and more in `CORE/vhdl/config.vhd` and in
-   `CORE/vhdl/globals.vhd`.
+The MEGA65 port uses the
+[MiSTer2MEGA65](https://github.com/sy2002/MiSTer2MEGA65) framework and
+[QNICE-FPGA](https://github.com/sy2002/QNICE-FPGA) for integration with
+the MEGA65, including FAT32 ROM loading and the on-screen menu.
 
-**DONE** your core is ported to MEGA65! :-)
+## Credits
 
-*Obviously, this is a shameless exaggeration of how easy it is to work with
-MiSTer2MEGA65, but you get the gist of it.*
+Black Tiger was originally developed and released by **Capcom** in 1987.
 
-Getting started, detailed documentation and support
----------------------------------------------------
+This MEGA65 core would not exist without the work of **Jotego and the
+JTCORES contributors**. The MEGA65 version is based on the JTCORES Black
+Tiger implementation at the revision linked above.
 
-1. You might want to start your journey
-  [here](https://github.com/sy2002/MiSTer2MEGA65/wiki/1.-What-is-MiSTer2MEGA65)
-  and then follow the reading track that is pointed out in the
-  respective chapters.
+Additional credit goes to **sy2002, MJoergen and the MiSTer2MEGA65
+contributors** for the MiSTer2MEGA65 framework and QNICE-FPGA
+integration used by this port.
 
-2. Run through this tutorial: https://files.mega65.org?ar=898d573b-d30d-4438-8893-09455bd16400
+## How to install the core
 
-3. Choose the MiSTer core you want to port here: https://mister-devel.github.io/MkDocs_MiSTer/
+### 1. Obtain the Black Tiger ROM set
 
-4. Use [The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide) to do the actual work. The guide contains all steps "From Zero to Hero".
+You need the MAME **Black Tiger** ROM set:
 
-Status of the framework
------------------------
+`blktiger.zip`
 
-**The MiSTer2MEGA (M2M) framework is stable and ready for being used.**
-The reference implementation of the M2M framework is the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65).
-Additionally there is already a decent amount of cores that are based on the M2M framework.
-Head to the [Alternate MEGA65 cores](https://cores.mega65.org) website to learn more.
+ROM files are **not included** with this repository.
 
-[The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide)
-is very comprehensive - if you miss something or have questions, contact us on Discord.
+The ROM conversion scripts expect the ZIP to contain the following
+files:
 
-The [Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65) is the reference implementation
-of the M2M framework and [The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide) uses it heavily to provide you with examples. Don't hesitate to take code snippets from the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65) for your own projects.
-nd join the
-[friendly MEGA65 community on Discord](https://discord.com/channels/719326990221574164/1177364456896999485).
+``` text
+bdu-02a.6e
+bdu-03a.8e
+bd-04.9e
+bd-05.10e
+bdu-01a.5e
+bd-06.1l
+bd-15.2n
+bd-14.9b
+bd-12.5b
+bd-13.8b
+bd-11.4b
+bd-10.9a
+bd-08.5a
+bd-09.8a
+bd-07.4a
+bd.6k
+bd01.8j
+bd02.9j
+bd03.11k
+bd04.11l
+```
+
+The conversion will stop with an error if one of the required ROMs is
+missing or has an unexpected size.
+
+### 2. Generate the MEGA65 ROM images
+
+Two ROM conversion scripts are provided:
+
+-   `black_tiger.ps1` - Windows PowerShell
+-   `black_tiger.sh` - Linux/macOS shell
+
+The scripts read the files directly from `blktiger.zip`; you do **not**
+need to extract the MAME ZIP first.
+
+They also perform the transformations required by the MEGA65 port,
+including the JTFRAME ROM interleaving and the object ROM address
+reordering used by the sprite implementation.
+
+#### Windows / PowerShell
+
+Place `black_tiger.ps1` and `blktiger.zip` in the same directory and
+run:
+
+``` powershell
+.\black_tiger.ps1 blktiger.zip
+```
+
+If Windows marks the downloaded PowerShell script as coming from the
+Internet, you can unblock it with:
+
+``` powershell
+Unblock-File .\black_tiger.ps1
+```
+
+#### Linux / macOS
+
+Place `black_tiger.sh` and `blktiger.zip` in the same directory.
+
+Make the script executable if necessary:
+
+``` bash
+chmod +x black_tiger.sh
+```
+
+Then run:
+
+``` bash
+./black_tiger.sh blktiger.zip
+```
+
+The shell version requires `bash`, `unzip` and `perl`.
+
+### 3. Generated ROM files
+
+By default the scripts create a directory named:
+
+``` text
+btiger_roms
+```
+
+containing:
+
+``` text
+btiger_main.rom
+btiger_sound.rom
+btiger_char.rom
+btiger_tiles.rom
+btiger_obj.rom
+btiger_mcu.rom
+btiger_prom.rom
+```
+
+The expected sizes are:
+
+  File                        Size
+  -------------------- -----------
+  `btiger_main.rom`      `0x48000`
+  `btiger_sound.rom`     `0x08000`
+  `btiger_char.rom`      `0x08000`
+  `btiger_tiles.rom`     `0x40000`
+  `btiger_obj.rom`       `0x40000`
+  `btiger_mcu.rom`       `0x01000`
+  `btiger_prom.rom`      `0x00400`
+
+The complete generated ROM payload is `0xD9400` bytes.
+
+You can optionally specify another output directory.
+
+PowerShell:
+
+``` powershell
+.\black_tiger.ps1 blktiger.zip my_roms
+```
+
+Linux/macOS:
+
+``` bash
+./black_tiger.sh blktiger.zip my_roms
+```
+
+### 4. Copy the ROMs to the MEGA65 SD card
+
+Copy the generated Black Tiger ROM files to the directory expected by
+the Black Tiger core on your MEGA65 SD card.
+
+The folder where the ROMs reside must be /blktiger
+
+Both the bottom SD card slot and the rear SD card slot can be used. As
+with other MEGA65 cores, the rear SD card takes precedence when both are
+present.
+
+Install the Black Tiger `.cor` file using the normal MEGA65 core
+installation procedure.
+
+## Game setup
+
+Press the **HELP** key while the core is running to open the
+MiSTer2MEGA65 on-screen menu.
+
+The menu provides display, audio, control and DIP-switch settings for
+the core.
+
+### Video output
+
+The core supports the MiSTer2MEGA65 digital video modes as well as
+analog/VGA output modes.
+
+The VGA menu provides:
+
+-   Standard output
+-   Retro 15 kHz mode with separate HS/VS
+-   Retro 15 kHz mode with CSYNC
+
+### Controls
+
+The MEGA65 joystick ports are used for the arcade controls.
+
+The menu also contains configuration for the second fire button using
+the MEGA65 POT lines, including POTX/POTY selection and polarity
+settings for the joystick port 1.
+
+If Black Tiger jumps on its own when the game starts, simply alternate the polarity.  
+
+Keyboard controls are recommended if you don't use an arcade style fight stick.  
+
+Cocktail mode is not supported by this core, leave the game in Upright mode.
+In this mode, 2 player games share the single joystick in port 1.
+
+### DIP switches
+
+The original Black Tiger arcade DIP switches can be configured from the
+on-screen menu.
+
+The DIP-switch menus expose the individual SW1 and SW2 settings so the
+arcade configuration can be adjusted from the MEGA65.
+
+## Upstream projects
+
+This port builds upon the work of several open-source FPGA projects:
+
+-   [Jotego JTCORES](https://github.com/jotego/jtcores)
+-   [Black Tiger core in JTCORES - pinned upstream
+    revision](https://github.com/jotego/jtcores/tree/90bab1b9dc7a6f190f78b6b51b54ba59476d3c53/cores/btiger)
+-   [MiSTer2MEGA65](https://github.com/sy2002/MiSTer2MEGA65)
+  
+Please support the upstream projects and developers whose work made this
+MEGA65 port possible.
+
+## Status
+
+This is an initial MEGA65 release of the Black Tiger core.
+
+Please report MEGA65-specific problems through the Black Tiger MEGA65
+project rather than to the upstream JTCORES project unless the problem
+has also been reproduced on the original upstream implementation.
