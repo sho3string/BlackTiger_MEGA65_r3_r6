@@ -76,8 +76,8 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
 constant SCR_WELCOME : string :=
 
-   "Black Tiger V0.5.0 - Alpha\n" &
-   "--------------------------\n" &
+   "Black Tiger V0.5.0\n" &
+   "------------------\n" &
    "\n" &
    "Jotego port by Muse 2026\n\n" &
 
@@ -87,7 +87,7 @@ constant SCR_WELCOME : string :=
    "\n\n"                                 &
    "Credits  : Press '5' or '6'\n"        & 
    "Start    : Press '1' or '2'\n"        &
-   "Pause    : Press 'p'\n"               &
+   "Pause    : Press 'CAPS-LOCK'\n"       &
    "Controls : Joy - arrows & z+x\n"      &
    "\n\n    Press Space to continue.\n"; 
 
@@ -263,7 +263,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "M2M DEMO CORE V1.0";
+constant CORENAME          : string := "BlackTiger v0.5.0";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -325,87 +325,95 @@ constant OPTM_S_CRTROM     : string := "<Load>";
 constant OPTM_S_SAVING     : string := "<Saving>";
 
 -- Size of menu and menu items
-constant OPTM_SIZE         : natural := 62;
+constant OPTM_SIZE         : natural := 68;
 
 -- Net size of the Options menu on the screen in characters
 constant OPTM_DX           : natural := 23;
-constant OPTM_DY           : natural := 28;
+constant OPTM_DY           : natural := 23;
 
 constant OPTM_ITEMS        : string :=
+           " Black Tiger - Capcom\n"    &  --  0
+           "\n"                         &  --  1
 
-   " Demo Headline A\n"     &  --  0
-   "\n"                     &  --  1
-   " Item A.1\n"            &  --  2
-   " Item A.2\n"            &  --  3
-   " Item A.3\n"            &  --  4
-   " Item A.4\n"            &  --  5
-   "\n"                     &  --  6
-   " Demo Headline B\n"     &  --  7
-   "\n"                     &  --  8
+           " Display Settings\n"        &  --  2
+           "\n"                         &  --  3
 
-   " HDMI: %s\n"            &  --  9
-   " HDMI Settings\n"       &  -- 10
-   "\n"                     &  -- 11
-   " 720p 50 Hz 16:9\n"     &  -- 12
-   " 720p 60 Hz 16:9\n"     &  -- 13
-   " 576p 50 Hz 4:3\n"      &  -- 14
-   " 576p 50 Hz 5:4\n"      &  -- 15
-   " 640x480 60 Hz\n"       &  -- 16
-   " 720x480 59.94 Hz\n"    &  -- 17
-   " 800x600 60 Hz\n"       &  -- 18
-   "\n"                     &  -- 19
-   " Back to main menu\n"   &  -- 20
+           " HDMI: CRT emulation\n"     &  --  4
 
-   "\n"                     &  -- 21
-   " Another Headline\n"    &  -- 22
-   "\n"                     &  -- 23
+           " HDMI: %s\n"                &  --  5
+           " HDMI Settings\n"           &  --  6
+           "\n"                         &  --  7
+           " 720p 50 Hz 16:9\n"         &  --  8
+           " 720p 60 Hz 16:9\n"         &  --  9
+           " 576p 50 Hz 4:3\n"          &  -- 10
+           " 576p 50 Hz 5:4\n"          &  -- 11
+           " 640x480 60 Hz\n"           &  -- 12
+           " 720x480 59.94 Hz\n"        &  -- 13
+           " 800x600 60 Hz\n"           &  -- 14
+           "\n"                         &  -- 15
+           " Back to main menu\n"       &  -- 16
 
-   " HDMI: CRT emulation\n" &  -- 24
-   " HDMI: Zoom-in\n"       &  -- 25
-   " Audio improvements\n"  &  -- 26
+           " VGA: %s\n"                 &  -- 17
+           " VGA Display Mode\n"        &  -- 18
+           "\n"                         &  -- 19
+           " Standard\n"                &  -- 20
+           "\n"                         &  -- 21
+           " Retro 15 kHz mode\n"       &  -- 22
+           "\n"                         &  -- 23
+           " 15 kHz with HS/VS\n"       &  -- 24
+           " 15 kHz with CSYNC\n"       &  -- 25
+           "\n"                         &  -- 26
+           " Back to main menu\n"       &  -- 27
 
-   " Second Fire: POTX\n"   &  -- 27
-   " Second Fire: POTY\n"   &  -- 28
+           "\n"                         &  -- 28
+           " Audio Settings\n"          &  -- 29
+           "\n"                         &  -- 30
 
-   " P1 POT Polarity: High\n"  &  -- 29
-   " P1 POT Polarity: Low\n"   &  -- 30
+           " Audio improvements\n"      &  -- 31
 
-   " P2 POT Polarity: High\n"  &  -- 31
-   " P2 POT Polarity: Low\n"   &  -- 32
+           "\n"                         &  -- 32
+           " Control Settings\n"        &  -- 33
+           "\n"                         &  -- 34
 
-   "\n"                     &  -- 33
+           " Second Fire: POTX\n"       &  -- 35
+           " Second Fire: POTY\n"       &  -- 36
 
-   " DIP SW1\n"             &  -- 34
-   " SW1 Settings\n"        &  -- 35
-   "\n"                     &  -- 36
-   " SW1-1\n"               &  -- 37
-   " SW1-2\n"               &  -- 38
-   " SW1-3\n"               &  -- 39
-   " SW1-4\n"               &  -- 40
-   " SW1-5\n"               &  -- 41
-   " SW1-6\n"               &  -- 42
-   " SW1-7\n"               &  -- 43
-   " SW1-8\n"               &  -- 44
-   "\n"                     &  -- 45
-   " Back to main menu\n"   &  -- 46
+           " P1 POT Polarity: High\n"   &  -- 37
+           " P1 POT Polarity: Low\n"    &  -- 38
 
-   " DIP SW2\n"             &  -- 47
-   " SW2 Settings\n"        &  -- 48
-   "\n"                     &  -- 49
-   " SW2-1\n"               &  -- 50
-   " SW2-2\n"               &  -- 51
-   " SW2-3\n"               &  -- 52
-   " SW2-4\n"               &  -- 53
-   " SW2-5\n"               &  -- 54
-   " SW2-6\n"               &  -- 55
-   " SW2-7\n"               &  -- 56
-   " SW2-8\n"               &  -- 57
-   "\n"                     &  -- 58
-   " Back to main menu\n"   &  -- 59
+           "\n"                         &  -- 39
 
-   "\n"                     &  -- 60
-   " Close Menu\n";            -- 61
+           " DIP SW1\n"                 &  -- 40
+           " SW1 Settings\n"            &  -- 41
+           "\n"                         &  -- 42
+           " SW1-1 Coin A\n"            &  -- 43
+           " SW1-2 Coin A\n"            &  -- 44
+           " SW1-3 Coin A\n"            &  -- 45
+           " SW1-4 Coin B\n"            &  -- 46
+           " SW1-5 Coin B\n"            &  -- 47
+           " SW1-6 Coin B\n"            &  -- 48
+           " SW1-7 Flip Screen\n"       &  -- 49
+           " SW1-8 Test\n"              &  -- 50
+           "\n"                         &  -- 51
+           " Back to main menu\n"       &  -- 52
 
+           " DIP SW2\n"                 &  -- 53
+           " SW2 Settings\n"            &  -- 54
+           "\n"                         &  -- 55
+           " SW2-1 Lives\n"             &  -- 56
+           " SW2-2 Lives\n"             &  -- 57
+           " SW2-3 Difficulty\n"        &  -- 58
+           " SW2-4 Difficulty\n"        &  -- 59
+           " SW2-5 Difficulty\n"        &  -- 60
+           " SW2-6 Demo Sounds\n"       &  -- 61
+           " SW2-7 Continue\n"          &  -- 62
+           " SW2-8 Cabinet\n"           &  -- 63
+           "\n"                         &  -- 64
+           " Back to main menu\n"       &  -- 65
+
+           "\n"                         &  -- 66
+           " Close Menu\n";                -- 67
+                
 
 --------------------------------------------------------------------------------------------------------------------
 -- Menu groups
@@ -414,125 +422,139 @@ constant OPTM_ITEMS        : string :=
 constant OPTM_G_Demo_A      : integer := 1;
 constant OPTM_G_HDMI        : integer := 2;
 constant OPTM_G_CRT         : integer := 3;
-constant OPTM_G_Zoom        : integer := 4;
-constant OPTM_G_Audio       : integer := 5;
-
-constant OPTM_G_SECOND_FIRE : integer := 6;
-constant OPTM_G_POTPOL      : integer := 7;   -- P1 polarity
+constant OPTM_G_Audio       : integer := 4;
+constant OPTM_G_SECOND_FIRE : integer := 5;
+constant OPTM_G_POTPOL      : integer := 6;   -- P1 polarity
 
 -- Black Tiger DIP SW1
-constant OPTM_G_SW1_0       : integer := 8;
-constant OPTM_G_SW1_1       : integer := 9;
-constant OPTM_G_SW1_2       : integer := 10;
-constant OPTM_G_SW1_3       : integer := 11;
-constant OPTM_G_SW1_4       : integer := 12;
-constant OPTM_G_SW1_5       : integer := 13;
-constant OPTM_G_SW1_6       : integer := 14;
-constant OPTM_G_SW1_7       : integer := 15;
+constant OPTM_G_SW1_0       : integer := 7;
+constant OPTM_G_SW1_1       : integer := 8;
+constant OPTM_G_SW1_2       : integer := 9;
+constant OPTM_G_SW1_3       : integer := 10;
+constant OPTM_G_SW1_4       : integer := 11;
+constant OPTM_G_SW1_5       : integer := 12;
+constant OPTM_G_SW1_6       : integer := 13;
+constant OPTM_G_SW1_7       : integer := 14;
 
 -- Black Tiger DIP SW2
-constant OPTM_G_SW2_0       : integer := 16;
-constant OPTM_G_SW2_1       : integer := 17;
-constant OPTM_G_SW2_2       : integer := 18;
-constant OPTM_G_SW2_3       : integer := 19;
-constant OPTM_G_SW2_4       : integer := 20;
-constant OPTM_G_SW2_5       : integer := 21;
-constant OPTM_G_SW2_6       : integer := 22;
-constant OPTM_G_SW2_7       : integer := 23;
-
-constant OPTM_G_P2_POTPOL   : integer := 24;  -- P2 polarity
+constant OPTM_G_SW2_0       : integer := 15;
+constant OPTM_G_SW2_1       : integer := 16;
+constant OPTM_G_SW2_2       : integer := 17;
+constant OPTM_G_SW2_3       : integer := 18;
+constant OPTM_G_SW2_4       : integer := 19;
+constant OPTM_G_SW2_5       : integer := 20;
+constant OPTM_G_SW2_6       : integer := 21;
+constant OPTM_G_SW2_7       : integer := 22;
+-- VGA / analog output
+constant OPTM_G_VGA_MODES   : integer := 24;
 
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC - 1;
 
 
-constant OPTM_GROUPS : OPTM_GTYPE := (                                    
-                                       -- 0..8
-                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              --  0 Demo Headline A
-                                       OPTM_G_LINE,                                --  1
-                                       OPTM_G_Demo_A + OPTM_G_START,               --  2 Item A.1
-                                       OPTM_G_Demo_A + OPTM_G_STDSEL,              --  3 Item A.2
-                                       OPTM_G_Demo_A,                              --  4 Item A.3
-                                       OPTM_G_Demo_A,                              --  5 Item A.4
-                                       OPTM_G_LINE,                                --  6
-                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              --  7 Demo Headline B
-                                       OPTM_G_LINE,                                --  8
-                                    
-                                       -- HDMI submenu
-                                       OPTM_G_SUBMENU,                             --  9 HDMI: %s
-                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 10 HDMI Settings
-                                       OPTM_G_LINE,                                -- 11
-                                       OPTM_G_HDMI + OPTM_G_STDSEL,                -- 12 720p 50 Hz 16:9
-                                       OPTM_G_HDMI,                                -- 13 720p 60 Hz 16:9
-                                       OPTM_G_HDMI,                                -- 14 576p 50 Hz 4:3
-                                       OPTM_G_HDMI,                                -- 15 576p 50 Hz 5:4
-                                       OPTM_G_HDMI,                                -- 16 640x480 60 Hz
-                                       OPTM_G_HDMI,                                -- 17 720x480 59.94 Hz
-                                       OPTM_G_HDMI,                                -- 18 800x600 60 Hz
-                                       OPTM_G_LINE,                                -- 19
-                                       OPTM_G_CLOSE + OPTM_G_SUBMENU,              -- 20 Back to main menu
-                                    
-                                       OPTM_G_LINE,                                -- 21
-                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 22 Another Headline
-                                       OPTM_G_LINE,                                -- 23
-                                    
-                                       OPTM_G_CRT + OPTM_G_SINGLESEL,              -- 24 HDMI: CRT emulation
-                                       OPTM_G_Zoom + OPTM_G_SINGLESEL,             -- 25 HDMI: Zoom-in
-                                       OPTM_G_Audio + OPTM_G_SINGLESEL,            -- 26 Audio improvements
-                                    
-                                                                               -- Second fire - shared POTX/POTY selection
-                                       OPTM_G_SECOND_FIRE + OPTM_G_STDSEL,         -- 27 POTX
-                                       OPTM_G_SECOND_FIRE,                         -- 28 POTY
+constant OPTM_GROUPS : OPTM_GTYPE := (
+                               -- Black Tiger
+                               OPTM_G_TEXT + OPTM_G_HEADLINE,                       --  0 Black Tiger
+                               OPTM_G_LINE,                                         --  1
 
-                                        -- Player 1 POT polarity
-                                       OPTM_G_POTPOL + OPTM_G_STDSEL,              -- 29 High
-                                       OPTM_G_POTPOL,                              -- 30 Low
+                               -- Display
+                               OPTM_G_TEXT + OPTM_G_HEADLINE,                       --  2 Display Settings
+                               OPTM_G_LINE,                                         --  3
 
-                                        -- Player 2 POT polarity
-                                       OPTM_G_P2_POTPOL + OPTM_G_STDSEL,           -- 31 High
-                                       OPTM_G_P2_POTPOL,                           -- 32 Low
+                               OPTM_G_CRT + OPTM_G_SINGLESEL + OPTM_G_START,        --  4 HDMI: CRT emulation
 
-                                       OPTM_G_LINE,                                -- 33
+                               -- HDMI submenu
+                               OPTM_G_SUBMENU,                                      --  5 HDMI: %s
+                               OPTM_G_HEADLINE,                                     --  6 HDMI Settings
+                               OPTM_G_LINE,                                         --  7
 
-                                        -- SW1 submenu
-                                       OPTM_G_SUBMENU,                             -- 34 DIP SW1
-                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 35 SW1 Settings
-                                       OPTM_G_LINE,                                -- 36
+                               OPTM_G_HDMI + OPTM_G_STDSEL,                         --  8 720p 50 Hz 16:9
+                               OPTM_G_HDMI,                                         --  9 720p 60 Hz 16:9
+                               OPTM_G_HDMI,                                         -- 10 576p 50 Hz 4:3
+                               OPTM_G_HDMI,                                         -- 11 576p 50 Hz 5:4
+                               OPTM_G_HDMI,                                         -- 12 640x480 60 Hz
+                               OPTM_G_HDMI,                                         -- 13 720x480 59.94 Hz
+                               OPTM_G_HDMI,                                         -- 14 800x600 60 Hz
 
-                                        -- SW1 MAME defaults = FF
-                                       OPTM_G_SW1_0 + OPTM_G_SINGLESEL,                 -- 37 - Test
-                                       OPTM_G_SW1_1 + OPTM_G_SINGLESEL,                 -- 38
-                                       OPTM_G_SW1_2 + OPTM_G_SINGLESEL,                 -- 39
-                                       OPTM_G_SW1_3 + OPTM_G_SINGLESEL,                 -- 40
-                                       OPTM_G_SW1_4 + OPTM_G_SINGLESEL,                 -- 41
-                                       OPTM_G_SW1_5 + OPTM_G_SINGLESEL,                 -- 42
-                                       OPTM_G_SW1_6 + OPTM_G_SINGLESEL,                 -- 43
-                                       OPTM_G_SW1_7 + OPTM_G_SINGLESEL,                 -- 44
+                               OPTM_G_LINE,                                         -- 15
+                               OPTM_G_CLOSE + OPTM_G_SUBMENU,                       -- 16 Back to main menu
 
-                                       OPTM_G_LINE,                                -- 45
-                                       OPTM_G_CLOSE + OPTM_G_SUBMENU,              -- 46 Back
+                               -- VGA submenu
+                               OPTM_G_SUBMENU,                                      -- 17 VGA: %s
+                               OPTM_G_HEADLINE,                                     -- 18 VGA Display Mode
+                               OPTM_G_LINE,                                         -- 19
 
-                                        -- SW2 submenu
-                                       OPTM_G_SUBMENU,                             -- 47 DIP SW2
-                                       OPTM_G_TEXT + OPTM_G_HEADLINE,              -- 48 SW2 Settings
-                                       OPTM_G_LINE,                                -- 49
+                               OPTM_G_VGA_MODES + OPTM_G_STDSEL,                    -- 20 Standard
 
-                                        -- SW2 MAME defaults = F6
-                                       OPTM_G_SW2_0 + OPTM_G_SINGLESEL + OPTM_G_STDSEL, -- 50 = 0
-                                       OPTM_G_SW2_1 + OPTM_G_SINGLESEL,                 -- 51 = 1
-                                       OPTM_G_SW2_2 + OPTM_G_SINGLESEL,                 -- 52 = 1
-                                       OPTM_G_SW2_3 + OPTM_G_SINGLESEL + OPTM_G_STDSEL, -- 53 = 0
-                                       OPTM_G_SW2_4 + OPTM_G_SINGLESEL,                 -- 54 = 1
-                                       OPTM_G_SW2_5 + OPTM_G_SINGLESEL,                 -- 55 = 1
-                                       OPTM_G_SW2_6 + OPTM_G_SINGLESEL,                 -- 56 = 1
-                                       OPTM_G_SW2_7 + OPTM_G_SINGLESEL,                 -- 57 = 1
+                               OPTM_G_LINE,                                         -- 21
+                               OPTM_G_TEXT,                                         -- 22 Retro 15 kHz mode
+                               OPTM_G_LINE,                                         -- 23
 
-                                       OPTM_G_LINE,                                -- 58
-                                       OPTM_G_CLOSE + OPTM_G_SUBMENU,              -- 59 Back
+                               OPTM_G_VGA_MODES,                                    -- 24 15 kHz with HS/VS
+                               OPTM_G_VGA_MODES,                                    -- 25 15 kHz with CSYNC
 
-                                       OPTM_G_LINE,                                -- 60
-                                       OPTM_G_CLOSE                                -- 61 Close Menu
+                               OPTM_G_LINE,                                         -- 26
+                               OPTM_G_CLOSE + OPTM_G_SUBMENU,                       -- 27 Back to main menu
+
+                               -- Audio
+                               OPTM_G_LINE,                                         -- 28
+                               OPTM_G_TEXT + OPTM_G_HEADLINE,                       -- 29 Audio Settings
+                               OPTM_G_LINE,                                         -- 30
+
+                               OPTM_G_Audio + OPTM_G_SINGLESEL,                     -- 31 Audio improvements
+
+                               -- Controls
+                               OPTM_G_LINE,                                         -- 32
+                               OPTM_G_TEXT + OPTM_G_HEADLINE,                       -- 33 Control Settings
+                               OPTM_G_LINE,                                         -- 34
+
+                               -- Second fire
+                               OPTM_G_SECOND_FIRE + OPTM_G_STDSEL,                  -- 35 POTX
+                               OPTM_G_SECOND_FIRE,                                  -- 36 POTY
+
+                               -- Player 1 POT polarity
+                               OPTM_G_POTPOL,                                       -- 37 High
+                               OPTM_G_POTPOL + OPTM_G_STDSEL,                       -- 38 Low
+
+                               OPTM_G_LINE,                                         -- 39
+
+                               -- DIP SW1 submenu
+                               OPTM_G_SUBMENU,                                      -- 40 DIP SW1
+                               OPTM_G_HEADLINE,                                     -- 41 SW1 Settings
+                               OPTM_G_LINE,                                         -- 42
+
+                               OPTM_G_SW1_0 + OPTM_G_SINGLESEL,                     -- 43 SW1-1
+                               OPTM_G_SW1_1 + OPTM_G_SINGLESEL,                     -- 44 SW1-2
+                               OPTM_G_SW1_2 + OPTM_G_SINGLESEL,                     -- 45 SW1-3
+                               OPTM_G_SW1_3 + OPTM_G_SINGLESEL,                     -- 46 SW1-4
+                               OPTM_G_SW1_4 + OPTM_G_SINGLESEL,                     -- 47 SW1-5
+                               OPTM_G_SW1_5 + OPTM_G_SINGLESEL,                     -- 48 SW1-6
+                               OPTM_G_SW1_6 + OPTM_G_SINGLESEL,                     -- 49 SW1-7
+                               OPTM_G_SW1_7 + OPTM_G_SINGLESEL,                     -- 50 SW1-8
+
+                               OPTM_G_LINE,                                         -- 51
+                               OPTM_G_CLOSE + OPTM_G_SUBMENU,                       -- 52 Back to main menu
+
+                               -- DIP SW2 submenu
+                               OPTM_G_SUBMENU,                                      -- 53 DIP SW2
+                               OPTM_G_HEADLINE,                                     -- 54 SW2 Settings
+                               OPTM_G_LINE,                                         -- 55
+
+                               OPTM_G_SW2_0 + OPTM_G_SINGLESEL + OPTM_G_STDSEL,     -- 56 SW2-1
+                               OPTM_G_SW2_1 + OPTM_G_SINGLESEL,                     -- 57 SW2-2
+                               OPTM_G_SW2_2 + OPTM_G_SINGLESEL,                     -- 58 SW2-3
+                               OPTM_G_SW2_3 + OPTM_G_SINGLESEL + OPTM_G_STDSEL,     -- 59 SW2-4
+                               OPTM_G_SW2_4 + OPTM_G_SINGLESEL,                     -- 60 SW2-5
+                               OPTM_G_SW2_5 + OPTM_G_SINGLESEL,                     -- 61 SW2-6
+                               OPTM_G_SW2_6 + OPTM_G_SINGLESEL,                     -- 62 SW2-7
+                               OPTM_G_SW2_7 + OPTM_G_SINGLESEL,                     -- 63 SW2-8
+
+                               OPTM_G_LINE,                                         -- 64
+                               OPTM_G_CLOSE + OPTM_G_SUBMENU,                       -- 65 Back to main menu
+
+                               OPTM_G_LINE,                                         -- 66
+                               OPTM_G_CLOSE                                         -- 67 Close Menu
 );
 
 

@@ -156,7 +156,6 @@ signal bt_dipsw         : std_logic_vector(31 downto 0);
 signal bt_joystick1     : std_logic_vector(5 downto 0);
 signal bt_joystick2     : std_logic_vector(5 downto 0);
 signal shoot2_button1_n : std_logic := '1';
-signal shoot2_button2_n : std_logic := '1';
 signal pot1_val         : std_logic_vector(7 downto 0);
 signal pot2_val         : std_logic_vector(7 downto 0);
 signal potxy_sw         : std_logic;
@@ -180,7 +179,7 @@ constant m65_horz_crsr  : integer := 2;  --Player right
 constant m65_z          : integer := 12; --Fire 1
 constant m65_x          : integer := 23; --Fire 2
 constant m65_9          : integer := 32; --Service button
-constant m65_p          : integer := 41; --Pause
+constant m65_capslock   : integer := 72; --Pause
 
 signal reset_async      : std_logic;
 signal reset_48         : std_logic;
@@ -197,9 +196,6 @@ signal bt_snd_ok        : std_logic;
 signal bt_char_ok       : std_logic;
 signal bt_scr_ok        : std_logic;
 signal bt_obj_ok        : std_logic;
-
--- test
-signal bt_mcu_pre_addr  : std_logic_vector(11 downto 0);
 
 
 component dualport_2clk_ram
@@ -290,9 +286,7 @@ component jtbtiger_game
  
       mcu_rom_addr: out std_logic_vector(11 downto 0);
       mcu_rom_cen : out std_logic;
-      mcu_rom_data: out std_logic_vector(7 downto 0);
-      -- temporary
-      mcu_debug_pre_rom : out std_logic_vector(11 downto 0);
+      mcu_rom_data: in std_logic_vector(7 downto 0);
       
       -- Priority PROM
       prior_rom_addr : out std_logic_vector(7 downto 0);
@@ -330,54 +324,8 @@ component jtframe_mixer
    );
 end component;
 
-    signal bt_mcu_pre_nonzero_seen : std_logic := '0';
 
 begin
-
-
-
-    -- Debug output
-    --debug_led_o <= reset_24;  -- results in high to low transition ( expected also when pressing reset button )
-    
-    -- test whether debug address is stuck at 0 -- results in led light green, so we are stuck at 0
-    -- debug_led_o <= '1' when bt_mcu_addr = x"000" else '0';
-    
-    
-    -- does the address ever leave $000, even momentarily? never
-    /*process(clk_24_i)
-    begin
-       if rising_edge(clk_24_i) then
-          if reset_24 = '1' then
-             bt_mcu_nonzero_seen <= '0';
-          else
-             if bt_mcu_addr /= x"000" then
-                bt_mcu_nonzero_seen <= '1';
-             end if;
-          end if;
-       end if;
-    end process;
-    
-    debug_led_o <= bt_mcu_nonzero_seen;*/
-    
-    -- we see 0x02
-    --debug_led_o <= '1' when bt_mcu_addr = x"000" and bt_mcu_data = x"02" else '0';
-    
-    process(clk_24_i)
-    begin
-       if rising_edge(clk_24_i) then
-          if reset_24 = '1' then
-             bt_mcu_pre_nonzero_seen <= '0';
-          elsif bt_mcu_pre_addr /= x"000" then
-             bt_mcu_pre_nonzero_seen <= '1';
-          end if;
-       end if;
-    end process;
-
-    debug_led_o <= bt_mcu_pre_nonzero_seen;
-    
----------------------------------------------------------------------------
--- Black Tiger
----------------------------------------------------------------------------
 
     ---------------------------------------------------------------------------
     -- Black Tiger 
@@ -443,24 +391,24 @@ begin
 
     -- SW1
     bt_dipsw_a <= not (
-    osm_control_i(C_MENU_SW1_0) &
-    osm_control_i(C_MENU_SW1_1) &
-    osm_control_i(C_MENU_SW1_2) &
-    osm_control_i(C_MENU_SW1_3) &
-    osm_control_i(C_MENU_SW1_4) &
-    osm_control_i(C_MENU_SW1_5) &
+    osm_control_i(C_MENU_SW1_7) &
     osm_control_i(C_MENU_SW1_6) &
-    osm_control_i(C_MENU_SW1_7));
+    osm_control_i(C_MENU_SW1_5) &
+    osm_control_i(C_MENU_SW1_4) &
+    osm_control_i(C_MENU_SW1_3) &
+    osm_control_i(C_MENU_SW1_2) &
+    osm_control_i(C_MENU_SW1_1) &
+    osm_control_i(C_MENU_SW1_0));
 
     bt_dipsw_b <= not (
-    osm_control_i(C_MENU_SW2_0) &
-    osm_control_i(C_MENU_SW2_1) &
-    osm_control_i(C_MENU_SW2_2) &
-    osm_control_i(C_MENU_SW2_3) &
-    osm_control_i(C_MENU_SW2_4) &
-    osm_control_i(C_MENU_SW2_5) &
+    osm_control_i(C_MENU_SW2_7) &
     osm_control_i(C_MENU_SW2_6) &
-    osm_control_i(C_MENU_SW2_7));
+    osm_control_i(C_MENU_SW2_5) &
+    osm_control_i(C_MENU_SW2_4) &
+    osm_control_i(C_MENU_SW2_3) &
+    osm_control_i(C_MENU_SW2_2) &
+    osm_control_i(C_MENU_SW2_1) &
+    osm_control_i(C_MENU_SW2_0));
 
     -- JTFRAME Black Tiger consumes dipsw[15:0]:
     -- [15:8] = SW1, [7:0] = SW2
@@ -475,24 +423,10 @@ begin
     bt_joystick1(4) <= joy_1_fire_n_i and keyboard_n(m65_z);
     
     -- Button 2
-    bt_joystick1(5) <= keyboard_n(m65_x); --shoot2_button1_n and 
-    
-    
-    bt_joystick2(0) <= joy_2_right_n_i;
-    bt_joystick2(1) <= joy_2_left_n_i;
-    bt_joystick2(2) <= joy_2_down_n_i;
-    bt_joystick2(3) <= joy_2_up_n_i;
-    
-    -- Button 1
-    bt_joystick2(4) <= joy_2_fire_n_i and keyboard_n(m65_z);
-    
-    -- Button 2
-    bt_joystick2(5) <= keyboard_n(m65_x); --shoot2_button2_n;
- 
+    bt_joystick1(5) <= keyboard_n(m65_x) and shoot2_button1_n;
     
     potxy_sw    <= osm_control_i(C_MENU_SECOND_FIRE); -- 0 = POTX, 1 = POTY
     pot_pol1_sw <= osm_control_i(C_MENU_POTPOL);      -- P1: 1 = active-low, 0 = active-high
-    pot_pol2_sw <= osm_control_i(C_MENU_P2_POTPOL);   -- P2: 1 = active-low, 0 = active-high
     
     bt_coin(0) <= keyboard_n(m65_6);  -- Coin 1
     bt_coin(1) <= keyboard_n(m65_5);  -- Coin 2
@@ -563,29 +497,8 @@ begin
              shoot2_button1_n <= '1';
           end if;
        end if;
-    
-    
-       ------------------------------------------------------------------------
-       -- Player 2 second fire
-       ------------------------------------------------------------------------
-       if pot_pol2_sw = '1' then
-          -- Active-low POT button
-          if unsigned(pot2_val) < unsigned'(x"80") then
-             shoot2_button2_n <= '0';
-          else
-             shoot2_button2_n <= '1';
-          end if;
-       else
-          -- Active-high POT button
-          if unsigned(pot2_val) >= unsigned'(x"80") then
-             shoot2_button2_n <= '0';
-          else
-             shoot2_button2_n <= '1';
-          end if;
-       end if;
     end process;
-    
-    
+
 
 -- Main CPU ROM is 288 KiB, so split it into 256 KiB + 32 KiB instead of
 -- wasting a 512 KiB power-of-two BRAM allocation.
@@ -767,7 +680,7 @@ begin
       joystick2   => bt_joystick2,
 
       dipsw       => bt_dipsw,--(others => '0'), --
-      dip_pause   => keyboard_n(m65_p),-- '1',     -- pause is active low, active high run
+      dip_pause   => keyboard_n(m65_capslock),-- '1',     -- pause is active low, active high run
       service     => keyboard_n(m65_9), 
       dip_flip    => open,
 
@@ -810,9 +723,7 @@ begin
       mcu_rom_addr => bt_mcu_addr,
       mcu_rom_cen  => bt_mcu_cen,
       mcu_rom_data => bt_mcu_data,
-      -- temporary
-      mcu_debug_pre_rom => bt_mcu_pre_addr,
-      
+ 
       -- Priority PROM
       prior_rom_addr => bt_prior_addr,
       prior_rom_cen  => bt_prior_cen,

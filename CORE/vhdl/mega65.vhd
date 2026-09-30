@@ -252,6 +252,7 @@ signal main_video_hs       : std_logic;
 signal main_video_hblank   : std_logic;
 signal main_video_vblank   : std_logic;
 
+signal div                 : std_logic_vector(2 downto 0) := (others => '0');
 signal video_ce            : std_logic;
 signal video_ce_ovl        : std_logic;
 signal video_red           : std_logic_vector(7 downto 0);
@@ -372,7 +373,7 @@ begin
          -- Video output
          -- This is PAL 720x576 @ 50 Hz (pixel clock 27 MHz), but synchronized to main_clk (54 MHz).
          video_ce_o           => video_ce,-- 6mhz from MiSTer core
-         video_ce_ovl_o       => video_ce_ovl,
+         video_ce_ovl_o       => open,
          video_red_o          => main_video_red,
          video_green_o        => main_video_green,
          video_blue_o         => main_video_blue,
@@ -419,6 +420,13 @@ begin
     process (main_clk) -- 48 MHz
     begin
        if rising_edge(main_clk) then
+        video_ce_ovl_o <= '0';
+        div <= std_logic_vector(unsigned(div) + 1);
+        
+        -- Keep the framework overlay CE at 24 MHz (video_clk / 2)
+        if div(0) = '1' then
+            video_ce_ovl_o <= '1';
+        end if;
     
           -- 4-bit -> 8-bit
         video_red   <= main_video_red   & main_video_red;
@@ -458,10 +466,8 @@ begin
    -- Use On-Screen-Menu selections to configure several audio and video settings
    -- Video and audio mode control
    qnice_dvi_o                <= '0';                                         -- 0=HDMI (with sound), 1=DVI (no sound)
-   qnice_scandoubler_o        <= '0';                                         -- no scandoubler
    qnice_audio_mute_o         <= '0';                                         -- audio is not muted
    qnice_audio_filter_o       <= qnice_osm_control_i(C_MENU_IMPROVE_AUDIO);   -- 0 = raw audio, 1 = use filters from globals.vhd
-   qnice_zoom_crop_o          <= qnice_osm_control_i(C_MENU_HDMI_ZOOM);       -- 0 = no zoom/crop
    
    -- These two signals are often used as a pair (i.e. both '1'), particularly when
    -- you want to run old analog cathode ray tube monitors or TVs (via SCART)
@@ -469,8 +475,10 @@ begin
    --    "Standard VGA":                     qnice_retro15kHz_o=0 and qnice_csync_o=0
    --    "Retro 15 kHz with HSync and VSync" qnice_retro15kHz_o=1 and qnice_csync_o=0
    --    "Retro 15 kHz with CSync"           qnice_retro15kHz_o=1 and qnice_csync_o=1
-   qnice_retro15kHz_o         <= '0';
-   qnice_csync_o              <= '0';
+                            
+   qnice_csync_o <= qnice_osm_control_i(C_MENU_VGA_15KHZCS);
+   qnice_retro15kHz_o <= qnice_osm_control_i(C_MENU_VGA_15KHZHSVS) or qnice_osm_control_i(C_MENU_VGA_15KHZCS);
+   qnice_scandoubler_o <= (not qnice_osm_control_i(C_MENU_VGA_15KHZHSVS)) and (not qnice_osm_control_i(C_MENU_VGA_15KHZCS));
    qnice_osm_cfg_scaling_o    <= (others => '1');
 
    -- ascal filters that are applied while processing the input
