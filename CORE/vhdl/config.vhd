@@ -541,14 +541,14 @@ constant OPTM_GROUPS : OPTM_GTYPE := (
                                OPTM_G_HEADLINE,                                     -- 54 SW2 Settings
                                OPTM_G_LINE,                                         -- 55
 
-                               OPTM_G_SW2_0 + OPTM_G_SINGLESEL + OPTM_G_STDSEL,     -- 56 SW2-1
+                               OPTM_G_SW2_0 + OPTM_G_SINGLESEL,                     -- 56 SW2-1
                                OPTM_G_SW2_1 + OPTM_G_SINGLESEL,                     -- 57 SW2-2
                                OPTM_G_SW2_2 + OPTM_G_SINGLESEL,                     -- 58 SW2-3
-                               OPTM_G_SW2_3 + OPTM_G_SINGLESEL + OPTM_G_STDSEL,     -- 59 SW2-4
-                               OPTM_G_SW2_4 + OPTM_G_SINGLESEL,                     -- 60 SW2-5
+                               OPTM_G_SW2_3 + OPTM_G_SINGLESEL,                     -- 59 SW2-4
+                               OPTM_G_SW2_4 + OPTM_G_SINGLESEL + OPTM_G_STDSEL,     -- 60 SW2-5
                                OPTM_G_SW2_5 + OPTM_G_SINGLESEL,                     -- 61 SW2-6
                                OPTM_G_SW2_6 + OPTM_G_SINGLESEL,                     -- 62 SW2-7
-                               OPTM_G_SW2_7 + OPTM_G_SINGLESEL,                     -- 63 SW2-8
+                               OPTM_G_SW2_7 + OPTM_G_SINGLESEL + OPTM_G_STDSEL,     -- 63 SW2-8
 
                                OPTM_G_LINE,                                         -- 64
                                OPTM_G_CLOSE + OPTM_G_SUBMENU,                       -- 65 Back to main menu
