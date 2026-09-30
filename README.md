@@ -174,7 +174,7 @@ Linux/macOS:
 Copy the generated Black Tiger ROM files to the directory expected by
 the Black Tiger core on your MEGA65 SD card.
 
-The folder where the ROMs reside must be /blktiger
+The folder where the ROMs reside must be /arcade/blktiger
 
 Both the bottom SD card slot and the rear SD card slot can be used. As
 with other MEGA65 cores, the rear SD card takes precedence when both are
