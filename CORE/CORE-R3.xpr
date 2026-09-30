@@ -1342,6 +1342,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/jotego/jtframe/hdl/jt8051/jt8051.uc"/>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="mega65_r3"/>

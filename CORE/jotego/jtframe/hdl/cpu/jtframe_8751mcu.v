@@ -35,7 +35,10 @@ module jtframe_8751mcu(
     
     output [11:0] rom_addr_o,
     output        rom_cen_o,
-    input  [7:0]  rom_data_i
+    input  [7:0]  rom_data_i,
+    
+    // temporary
+    output [11:0] debug_pre_rom_o
 );
 
 parameter ROMBIN="",
@@ -55,6 +58,14 @@ wire [ 7:0] pre_dout;
 wire [15:0] pre_addr, pre_rom;
 wire        pre_wr, pre_acc;
 wire        cen_eff = cen;
+
+assign      rom_addr_o = rom_addr[11:0];
+assign      rom_cen_o  = cen_eff;
+assign      rom_data   = rom_data_i;
+
+// temporary
+assign debug_pre_rom_o = pre_rom[11:0];
+
 
 always @(posedge clk) begin
     if (rst) begin

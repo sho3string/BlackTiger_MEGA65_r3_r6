@@ -263,6 +263,8 @@ signal video_vblank        : std_logic;
 signal video_hblank        : std_logic;
 signal video_de            : std_logic;
 
+signal mcu_debug_led       : std_logic;
+
 begin
 
    hr_core_write_o      <= '0';
@@ -410,6 +412,7 @@ begin
          dn_addr_i            => qnice_dn_addr,
          dn_data_i            => qnice_dn_data,
          dn_wr_i              => qnice_dn_wr,
+         debug_led_o          => mcu_debug_led,
          osm_control_i        => main_osm_control_i
       ); -- i_main
       
@@ -625,8 +628,11 @@ begin
    -- a) In case that this is handled in main.vhd, you need to add the appropriate ports to i_main
    -- b) You might want to change the drive led's color (just like the C64 core does) as long as
    --    the cache is dirty (i.e. as long as the write process is not finished, yet)
-   main_drive_led_o     <= '0';
-   main_drive_led_col_o <= x"00FF00";  -- 24-bit RGB value for the led
+   --main_drive_led_o     <= '0';
+   --main_drive_led_col_o <= x"00FF00";  -- 24-bit RGB value for the led
+   
+    main_drive_led_o     <= mcu_debug_led;
+    main_drive_led_col_o <= x"00FF00";
 
    
 end architecture synthesis;

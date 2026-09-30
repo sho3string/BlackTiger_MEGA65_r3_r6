@@ -76,6 +76,9 @@ entity main is
       dn_data_i               : in  std_logic_vector(7 downto 0);
       dn_wr_i                 : in  std_logic;
       
+      debug_led_o             : out std_logic;
+
+      
       osm_control_i           : in  std_logic_vector(255 downto 0)
    );
 end entity main;
@@ -195,6 +198,8 @@ signal bt_char_ok       : std_logic;
 signal bt_scr_ok        : std_logic;
 signal bt_obj_ok        : std_logic;
 
+-- test
+signal bt_mcu_pre_addr  : std_logic_vector(11 downto 0);
 
 
 component dualport_2clk_ram
@@ -286,6 +291,8 @@ component jtbtiger_game
       mcu_rom_addr: out std_logic_vector(11 downto 0);
       mcu_rom_cen : out std_logic;
       mcu_rom_data: out std_logic_vector(7 downto 0);
+      -- temporary
+      mcu_debug_pre_rom : out std_logic_vector(11 downto 0);
       
       -- Priority PROM
       prior_rom_addr : out std_logic_vector(7 downto 0);
@@ -323,7 +330,54 @@ component jtframe_mixer
    );
 end component;
 
+    signal bt_mcu_pre_nonzero_seen : std_logic := '0';
+
 begin
+
+
+
+    -- Debug output
+    --debug_led_o <= reset_24;  -- results in high to low transition ( expected also when pressing reset button )
+    
+    -- test whether debug address is stuck at 0 -- results in led light green, so we are stuck at 0
+    -- debug_led_o <= '1' when bt_mcu_addr = x"000" else '0';
+    
+    
+    -- does the address ever leave $000, even momentarily? never
+    /*process(clk_24_i)
+    begin
+       if rising_edge(clk_24_i) then
+          if reset_24 = '1' then
+             bt_mcu_nonzero_seen <= '0';
+          else
+             if bt_mcu_addr /= x"000" then
+                bt_mcu_nonzero_seen <= '1';
+             end if;
+          end if;
+       end if;
+    end process;
+    
+    debug_led_o <= bt_mcu_nonzero_seen;*/
+    
+    -- we see 0x02
+    --debug_led_o <= '1' when bt_mcu_addr = x"000" and bt_mcu_data = x"02" else '0';
+    
+    process(clk_24_i)
+    begin
+       if rising_edge(clk_24_i) then
+          if reset_24 = '1' then
+             bt_mcu_pre_nonzero_seen <= '0';
+          elsif bt_mcu_pre_addr /= x"000" then
+             bt_mcu_pre_nonzero_seen <= '1';
+          end if;
+       end if;
+    end process;
+
+    debug_led_o <= bt_mcu_pre_nonzero_seen;
+    
+---------------------------------------------------------------------------
+-- Black Tiger
+---------------------------------------------------------------------------
 
     ---------------------------------------------------------------------------
     -- Black Tiger 
@@ -353,10 +407,8 @@ begin
     dn_scr_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#58000# and unsigned(dn_addr_i) < 16#98000# and dn_addr_i(0) = '1' else '0';
     dn_obj_lo_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '0' else '0';
     dn_obj_hi_we  <= dn_wr_i when unsigned(dn_addr_i) >= 16#98000# and unsigned(dn_addr_i) < 16#D8000# and dn_addr_i(0) = '1' else '0';
-
-    --dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9400# else '0';
-    dn_mcu_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) <  16#D9000# else '0';
-    dn_prom_we <= dn_wr_i when unsigned(dn_addr_i) >= 16#D9000# and unsigned(dn_addr_i) <  16#D9400# else '0';
+    dn_mcu_we     <= dn_wr_i when unsigned(dn_addr_i) >= 16#D8000# and unsigned(dn_addr_i) < 16#D9000# else '0';
+    dn_prom_we    <= dn_wr_i when unsigned(dn_addr_i) >= 16#D9000# and unsigned(dn_addr_i) < 16#D9400# else '0';
     
     -- Black Tiger priority PROM bd01.8j
     -- $D9000-$D90FF
@@ -683,7 +735,7 @@ begin
        wren_b    => dn_prior_we
     );
 
-bt_prior_data <= bt_prior_data8(3 downto 0);
+    bt_prior_data <= bt_prior_data8(3 downto 0);
    
 
    i_black_tiger : jtbtiger_game
@@ -758,6 +810,8 @@ bt_prior_data <= bt_prior_data8(3 downto 0);
       mcu_rom_addr => bt_mcu_addr,
       mcu_rom_cen  => bt_mcu_cen,
       mcu_rom_data => bt_mcu_data,
+      -- temporary
+      mcu_debug_pre_rom => bt_mcu_pre_addr,
       
       -- Priority PROM
       prior_rom_addr => bt_prior_addr,
