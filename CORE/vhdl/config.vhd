@@ -183,8 +183,8 @@ constant SEL_CFG_FILE      : std_logic_vector(15 downto 0) := x"0101";
 
 -- START YOUR CONFIGURATION BELOW THIS LINE
 
-constant DIR_START         : string := "/blktiger";
-constant CFG_FILE          : string := "/blktiger/btcfg";
+constant DIR_START         : string := "/arcade/blktiger";
+constant CFG_FILE          : string := "/arcade/blktiger/btcfg";
 
 --------------------------------------------------------------------------------------------------------------------
 -- General configuration settings: Reset, Pause, OSD behavior, Ascal, etc. (Selector 0x0110)
